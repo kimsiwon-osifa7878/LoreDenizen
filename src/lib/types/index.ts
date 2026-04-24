@@ -36,11 +36,29 @@ export interface DownloadedModel {
   lastUsedAt: Date;
 }
 
+export interface HfRepoPreset {
+  hfRepo: string;
+}
+
+export interface HfRepoFile {
+  hfRepo: string;
+  fileName: string;
+  fileSize: number;
+  quantization: string;
+  architecture: string | null;
+  compatibility: ModelCompatibility;
+  compatibilityReason: string | null;
+}
+
+export type ModelCompatibility = "supported" | "unsupported" | "unknown";
+export type AppLanguage = "en" | "ko";
+
 export interface AppSettings {
   id: "global";
   activeModelId: string | null;
   defaultCharacterId: string | null;
   theme: "light" | "dark" | "system";
+  language: AppLanguage;
   inferenceParams: InferenceParams;
 }
 

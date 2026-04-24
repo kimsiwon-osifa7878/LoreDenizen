@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "LoreDenizen — 내 브라우저에서 돌리는 나만의 AI",
+  title: "LoreDenizen - Local AI in your browser",
   description:
-    "설치 없이 웹 브라우저에서 오픈소스 LLM을 다운로드하여 로컬 추론하는 캐릭터 챗 서비스",
+    "A character chat app that downloads open-source LLMs and runs them locally in your browser.",
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased">
       <body className="h-full font-sans">{children}</body>
     </html>
   );

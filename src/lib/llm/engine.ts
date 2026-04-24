@@ -7,6 +7,16 @@ const CONFIG_PATHS = {
   "multi-thread/wllama.wasm": "/wasm/multi-thread/wllama.wasm",
 };
 
+const NO_THINK_SYSTEM_INSTRUCTION =
+  "Answer directly. Do not include chain-of-thought, hidden reasoning, or <think> blocks in the response.";
+
+function stripThinkBlocks(text: string): string {
+  return text
+    .replace(/<think>[\s\S]*?<\/think>/gi, "")
+    .replace(/<think>[\s\S]*$/i, "")
+    .trimStart();
+}
+
 class LLMEngine {
   private wllama: Wllama | null = null;
   private currentModelId: string | null = null;
@@ -63,7 +73,7 @@ class LLMEngine {
     if (!this.wllama) throw new Error("모델이 로드되지 않음");
 
     this.abortController = new AbortController();
-    const prompt = this.formatMessages(messages);
+    const prompt = this.formatMessages(this.withNoThinkInstruction(messages));
 
     const result = await this.wllama.createCompletion(prompt, {
       nPredict: params.maxTokens,
@@ -78,12 +88,13 @@ class LLMEngine {
           abortSignal();
           return;
         }
-        onToken(currentText, currentText);
+        const visibleText = stripThinkBlocks(currentText);
+        onToken(visibleText, visibleText);
       },
     });
 
     this.abortController = null;
-    return result;
+    return stripThinkBlocks(result);
   }
 
   stopGeneration(): void {
@@ -107,6 +118,30 @@ class LLMEngine {
         })
         .join("\n") + "\n<|im_start|>assistant\n"
     );
+  }
+
+  private withNoThinkInstruction(
+    messages: Array<{ role: string; content: string }>
+  ): Array<{ role: string; content: string }> {
+    const [firstMessage, ...restMessages] = messages;
+
+    if (firstMessage?.role === "system") {
+      return [
+        {
+          ...firstMessage,
+          content: `${firstMessage.content}\n\n${NO_THINK_SYSTEM_INSTRUCTION}`,
+        },
+        ...restMessages,
+      ];
+    }
+
+    return [
+      {
+        role: "system",
+        content: NO_THINK_SYSTEM_INSTRUCTION,
+      },
+      ...messages,
+    ];
   }
 
   async unloadModel(): Promise<void> {

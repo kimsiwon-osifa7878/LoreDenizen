@@ -1,6 +1,8 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import { useChatStore } from "@/lib/store/chat-store";
+import { useSettingsStore } from "@/lib/store/settings-store";
 import { useUIStore } from "@/lib/store/ui-store";
 
 export function CharacterList() {
@@ -8,30 +10,33 @@ export function CharacterList() {
   const activeCharacter = useChatStore((s) => s.activeCharacter);
   const setActiveCharacter = useChatStore((s) => s.setActiveCharacter);
   const setCharacterEditorOpen = useUIStore((s) => s.setCharacterEditorOpen);
+  const language = useSettingsStore((s) => s.language);
 
   return (
     <div className="border-t border-border">
       <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-xs font-medium text-muted">캐릭터</span>
+        <span className="text-xs font-medium text-muted">
+          {t(language, "characters")}
+        </span>
         <button
           onClick={() => setCharacterEditorOpen(true)}
           className="text-xs text-accent hover:underline"
         >
-          + 새 캐릭터
+          + {t(language, "newCharacter")}
         </button>
       </div>
-      <div className="max-h-40 overflow-y-auto custom-scrollbar">
-        {characters.map((char) => (
+      <div className="custom-scrollbar max-h-40 overflow-y-auto">
+        {characters.map((character) => (
           <div
-            key={char.id}
-            className={`flex items-center gap-2 px-3 py-2 cursor-pointer text-sm hover:bg-border/50 transition-colors ${
-              activeCharacter?.id === char.id ? "bg-border/70" : ""
+            key={character.id}
+            className={`flex cursor-pointer items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-border/50 ${
+              activeCharacter?.id === character.id ? "bg-border/70" : ""
             }`}
-            onClick={() => setActiveCharacter(char)}
-            onDoubleClick={() => setCharacterEditorOpen(true, char.id)}
+            onClick={() => setActiveCharacter(character)}
+            onDoubleClick={() => setCharacterEditorOpen(true, character.id)}
           >
-            <span>{char.avatar}</span>
-            <span className="truncate">{char.name}</span>
+            <span>{character.avatar}</span>
+            <span className="truncate">{character.name}</span>
           </div>
         ))}
       </div>

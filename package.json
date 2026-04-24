@@ -9,6 +9,7 @@
     "postinstall": "node scripts/copy-wasm.mjs"
   },
   "dependencies": {
+    "@huggingface/gguf": "^0.4.2",
     "@wllama/wllama": "^2.3.7",
     "dexie": "^4.4.2",
     "next": "16.2.2",

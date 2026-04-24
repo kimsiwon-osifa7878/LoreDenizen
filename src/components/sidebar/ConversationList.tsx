@@ -1,36 +1,41 @@
 "use client";
 
+import { t } from "@/lib/i18n";
 import { useChatStore } from "@/lib/store/chat-store";
+import { useSettingsStore } from "@/lib/store/settings-store";
 
 export function ConversationList() {
   const conversations = useChatStore((s) => s.conversations);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const setActiveConversation = useChatStore((s) => s.setActiveConversation);
   const deleteConv = useChatStore((s) => s.deleteConv);
+  const language = useSettingsStore((s) => s.language);
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar">
+    <div className="custom-scrollbar flex-1 overflow-y-auto">
       {conversations.length === 0 && (
-        <p className="text-xs text-muted px-3 py-2">대화가 없습니다</p>
+        <p className="px-3 py-2 text-xs text-muted">
+          {t(language, "noConversations")}
+        </p>
       )}
-      {conversations.map((conv) => (
+      {conversations.map((conversation) => (
         <div
-          key={conv.id}
-          className={`group flex items-center gap-2 px-3 py-2.5 cursor-pointer text-sm hover:bg-border/50 transition-colors ${
-            activeConversationId === conv.id ? "bg-border/70" : ""
+          key={conversation.id}
+          className={`group flex cursor-pointer items-center gap-2 px-3 py-2.5 text-sm transition-colors hover:bg-border/50 ${
+            activeConversationId === conversation.id ? "bg-border/70" : ""
           }`}
-          onClick={() => setActiveConversation(conv.id)}
+          onClick={() => setActiveConversation(conversation.id)}
         >
-          <span className="flex-1 truncate">{conv.title}</span>
+          <span className="flex-1 truncate">{conversation.title}</span>
           <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteConv(conv.id);
+            onClick={(event) => {
+              event.stopPropagation();
+              deleteConv(conversation.id);
             }}
-            className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-500 transition-opacity text-xs"
-            aria-label="대화 삭제"
+            className="text-xs text-muted opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+            aria-label={t(language, "deleteConversation")}
           >
-            ✕
+            x
           </button>
         </div>
       ))}

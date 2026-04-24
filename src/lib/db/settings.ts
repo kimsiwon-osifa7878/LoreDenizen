@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   activeModelId: null,
   defaultCharacterId: null,
   theme: "system",
+  language: "en",
   inferenceParams: DEFAULT_INFERENCE_PARAMS,
 };
 
@@ -16,7 +17,21 @@ export async function getSettings(): Promise<AppSettings> {
     await db.settings.add(DEFAULT_SETTINGS);
     return DEFAULT_SETTINGS;
   }
-  return settings;
+
+  const normalizedSettings = {
+    ...DEFAULT_SETTINGS,
+    ...settings,
+    inferenceParams: {
+      ...DEFAULT_INFERENCE_PARAMS,
+      ...settings.inferenceParams,
+    },
+  };
+
+  if (!settings.language) {
+    await db.settings.update("global", { language: DEFAULT_SETTINGS.language });
+  }
+
+  return normalizedSettings;
 }
 
 export async function updateSettings(

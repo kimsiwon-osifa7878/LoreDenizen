@@ -20,8 +20,8 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-bubble-assistant flex items-center justify-center text-lg">
-          {characterAvatar || "🤖"}
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-bubble-assistant text-lg">
+          {characterAvatar || "AI"}
         </div>
       )}
       <div
@@ -34,7 +34,7 @@ export const MessageBubble = memo(function MessageBubble({
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
-          <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:my-1 [&>pre]:my-2">
+          <div className="prose prose-sm max-w-none dark:prose-invert [&>p]:my-1 [&>pre]:my-2">
             <ReactMarkdown>{message.content}</ReactMarkdown>
           </div>
         )}
