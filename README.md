@@ -35,3 +35,10 @@ The UI now works in repo-first mode:
 - users can also enter an exact `owner/name` repo manually
 - the app loads GGUF files from that repo and lets the user download a specific file
 - global Hugging Face search remains controlled by `ENABLE_HF_MODEL_SEARCH`
+
+## 진행상황
+
+- Phase 1은 대부분 완료됨: Next.js App Router, TypeScript strict, Tailwind 4, wllama/Dexie/Zustand 설치, COOP/COEP 헤더, WASM 복사, `npm run build` 성공.
+- 정리 필요 사항: 현재 셸에서 `pnpm`이 인식되지 않아 `pnpm build`는 미확인, `package-lock.json`과 `pnpm-lock.yaml` 공존, 일부 한국어 주석 인코딩 깨짐.
+- 현재 코드는 Phase 2 일부와 Phase 3 일부까지 이미 진행됨.
+- 다음 우선순위: Phase 1 마감 정리 후 Phase 2 DB 레이어 검증 및 보강.
