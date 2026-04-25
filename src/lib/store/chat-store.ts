@@ -52,7 +52,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   loadCharacters: async () => {
     const characters = await getAllCharacters();
-    set({ characters });
+    set((state) => ({
+      characters,
+      activeCharacter: state.activeCharacter
+        ? characters.find((item) => item.id === state.activeCharacter?.id) ?? null
+        : characters[0] ?? null,
+    }));
   },
 
   loadSettings: async () => {
@@ -79,6 +84,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
     const language = useSettingsStore.getState().language;
     const modelId = llmEngine.getCurrentModelId() ?? "none";
     const charId = characterId ?? get().activeCharacter?.id ?? null;
+    if (!charId) {
+      throw new Error("character-required");
+    }
     const conversation = await createConversation({
       title: t(language, "newConversationTitle"),
       characterId: charId,

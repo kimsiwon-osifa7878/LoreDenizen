@@ -14,8 +14,9 @@ const DEFAULT_SETTINGS: AppSettings = {
 export async function getSettings(): Promise<AppSettings> {
   const settings = await db.settings.get("global");
   if (!settings) {
-    await db.settings.add(DEFAULT_SETTINGS);
-    return DEFAULT_SETTINGS;
+    const seededSettings: AppSettings = { ...DEFAULT_SETTINGS };
+    await db.settings.put(seededSettings);
+    return seededSettings;
   }
 
   const normalizedSettings = {
@@ -39,7 +40,7 @@ export async function updateSettings(
 ): Promise<void> {
   const existing = await db.settings.get("global");
   if (!existing) {
-    await db.settings.add({ ...DEFAULT_SETTINGS, ...data });
+    await db.settings.put({ ...DEFAULT_SETTINGS, ...data });
   } else {
     await db.settings.update("global", data);
   }

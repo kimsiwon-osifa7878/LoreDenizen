@@ -19,6 +19,7 @@ export interface Character {
   id: string;
   name: string;
   avatar: string;
+  images: string[];
   systemPrompt: string;
   description: string;
   tags: string[];

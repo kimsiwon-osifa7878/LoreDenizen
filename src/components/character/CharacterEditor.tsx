@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { t } from "@/lib/i18n";
 import {
   createCharacter,
@@ -72,6 +72,7 @@ export function CharacterEditor() {
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState(getTemplatePrompt(language));
   const [tags, setTags] = useState("");
+  const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -84,6 +85,7 @@ export function CharacterEditor() {
           setDescription(character.description);
           setSystemPrompt(character.systemPrompt);
           setTags(character.tags.join(", "));
+          setImages(character.images ?? []);
         }
       });
       return;
@@ -94,6 +96,7 @@ export function CharacterEditor() {
     setDescription("");
     setSystemPrompt(getTemplatePrompt(language));
     setTags("");
+    setImages([]);
   }, [open, editingId, language]);
 
   const handleSave = async () => {
@@ -104,6 +107,7 @@ export function CharacterEditor() {
       avatar,
       description: description.trim(),
       systemPrompt,
+      images,
       tags: tags
         .split(",")
         .map((tag) => tag.trim())
@@ -129,6 +133,24 @@ export function CharacterEditor() {
   };
 
   if (!open) return null;
+
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files?.length) return;
+    const results = await Promise.all(
+      Array.from(files).map(
+        (file) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(String(reader.result ?? ""));
+            reader.onerror = () => reject(new Error("image-read-failed"));
+            reader.readAsDataURL(file);
+          })
+      )
+    );
+    setImages((prev) => [...prev, ...results.filter(Boolean)]);
+    event.target.value = "";
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -168,6 +190,46 @@ export function CharacterEditor() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">
+              {t(language, "uploadImages")}
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleImageUpload}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+            {images.length > 0 && (
+              <div className="mt-2">
+                <div className="mb-1 text-xs text-muted">
+                  {t(language, "uploadedImages")}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {images.map((image, index) => (
+                    <div key={`${image.slice(0, 20)}-${index}`} className="space-y-1">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image}
+                        alt={`character upload ${index + 1}`}
+                        className="h-16 w-full rounded-md object-cover"
+                      />
+                      <button
+                        onClick={() =>
+                          setImages((prev) => prev.filter((_, i) => i !== index))
+                        }
+                        className="w-full text-xs text-red-500 hover:underline"
+                      >
+                        {t(language, "removeImage")}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
