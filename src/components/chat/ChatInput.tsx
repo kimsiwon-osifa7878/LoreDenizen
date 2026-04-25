@@ -12,6 +12,9 @@ export function ChatInput() {
   const sendMessage = useChatStore((s) => s.sendMessage);
   const isGenerating = useChatStore((s) => s.isGenerating);
   const stopGeneration = useChatStore((s) => s.stopGeneration);
+  const activeConversationId = useChatStore((s) => s.activeConversationId);
+  const activeCharacter = useChatStore((s) => s.activeCharacter);
+  const requiresCharacterSelection = !activeConversationId && !activeCharacter;
 
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -22,14 +25,14 @@ export function ChatInput() {
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
-    if (!trimmed || isGenerating) return;
+    if (!trimmed || isGenerating || requiresCharacterSelection) return;
 
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
     await sendMessage(trimmed);
-  }, [input, isGenerating, sendMessage]);
+  }, [input, isGenerating, requiresCharacterSelection, sendMessage]);
 
   const handleKeyDown = useCallback(
     (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -52,7 +55,11 @@ export function ChatInput() {
             adjustHeight();
           }}
           onKeyDown={handleKeyDown}
-          placeholder={t(language, "messagePlaceholder")}
+          placeholder={
+            requiresCharacterSelection
+              ? t(language, "characterRequiredToSend")
+              : t(language, "messagePlaceholder")
+          }
           rows={1}
           className="flex-1 resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
         />
@@ -75,7 +82,7 @@ export function ChatInput() {
         ) : (
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || requiresCharacterSelection}
             className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent text-white transition-colors hover:bg-accent-hover disabled:opacity-40"
             aria-label={t(language, "sendMessage")}
           >

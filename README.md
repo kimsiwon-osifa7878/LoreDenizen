@@ -14,6 +14,23 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## E2E test (Playwright)
+
+```bash
+# install Chromium for Playwright
+pnpm test:e2e:install
+
+# run E2E tests
+pnpm test:e2e
+```
+
+If your environment blocks Playwright browser downloads, set an already-installed
+Chromium path and run tests with:
+
+```bash
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium pnpm test:e2e
+```
+
 ## Environment variables
 
 `HF_MODELS` example:

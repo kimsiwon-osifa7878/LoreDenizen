@@ -21,7 +21,16 @@ export const MessageBubble = memo(function MessageBubble({
     <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       {!isUser && (
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-bubble-assistant text-lg">
-          {characterAvatar || "AI"}
+          {characterAvatar?.startsWith("data:image/") ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={characterAvatar}
+              alt="character avatar"
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            characterAvatar || "AI"
+          )}
         </div>
       )}
       <div

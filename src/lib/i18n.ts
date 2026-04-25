@@ -22,6 +22,8 @@ const translations = {
     sidebarToggle: "Toggle sidebar",
     newChat: "New chat",
     noConversations: "No conversations yet",
+    unknownCharacter: "Unknown character",
+    noCharacterSelected: "No character selected",
     deleteConversation: "Delete conversation",
     characters: "Characters",
     newCharacter: "New character",
@@ -80,6 +82,16 @@ const translations = {
     newConversationTitle: "New chat",
     modelNotLoaded:
       "A model is not loaded. Download and select a model first.",
+    chooseCharacter: "Choose a character",
+    chooseCharacterToStart: "Select a character before starting a new chat.",
+    openPersonaEditor: "Persona",
+    savePersona: "Save persona",
+    selectThisCharacter: "Select",
+    uploadImages: "Upload images",
+    uploadedImages: "Uploaded images",
+    removeImage: "Remove",
+    characterRequiredToSend:
+      "Choose a character first. Start a new chat and select one.",
   },
   ko: {
     settings: "설정",
@@ -100,6 +112,8 @@ const translations = {
     sidebarToggle: "사이드바 전환",
     newChat: "새 대화",
     noConversations: "대화가 없습니다",
+    unknownCharacter: "알 수 없는 캐릭터",
+    noCharacterSelected: "캐릭터 미선택",
     deleteConversation: "대화 삭제",
     characters: "캐릭터",
     newCharacter: "새 캐릭터",
@@ -158,6 +172,16 @@ const translations = {
     newConversationTitle: "새 대화",
     modelNotLoaded:
       "모델이 로드되지 않았습니다. 모델을 먼저 다운로드하고 선택해주세요.",
+    chooseCharacter: "캐릭터 선택",
+    chooseCharacterToStart: "새 대화를 시작하기 전에 캐릭터를 선택하세요.",
+    openPersonaEditor: "페르소나",
+    savePersona: "페르소나 저장",
+    selectThisCharacter: "선택",
+    uploadImages: "이미지 업로드",
+    uploadedImages: "업로드된 이미지",
+    removeImage: "삭제",
+    characterRequiredToSend:
+      "먼저 캐릭터를 선택하세요. 새 대화에서 캐릭터를 고른 뒤 메시지를 보낼 수 있습니다.",
   },
 } as const;
 

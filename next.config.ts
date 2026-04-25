@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   // wllama multi-thread 지원을 위한 필수 헤더
   async headers() {
     return [

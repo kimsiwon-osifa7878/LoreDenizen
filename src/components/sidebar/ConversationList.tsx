@@ -6,10 +6,12 @@ import { useSettingsStore } from "@/lib/store/settings-store";
 
 export function ConversationList() {
   const conversations = useChatStore((s) => s.conversations);
+  const characters = useChatStore((s) => s.characters);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const setActiveConversation = useChatStore((s) => s.setActiveConversation);
   const deleteConv = useChatStore((s) => s.deleteConv);
   const language = useSettingsStore((s) => s.language);
+  const characterMap = new Map(characters.map((character) => [character.id, character]));
 
   return (
     <div className="custom-scrollbar flex-1 overflow-y-auto">
@@ -26,7 +28,15 @@ export function ConversationList() {
           }`}
           onClick={() => setActiveConversation(conversation.id)}
         >
-          <span className="flex-1 truncate">{conversation.title}</span>
+          <div className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate">{conversation.title}</span>
+            <span className="truncate text-[11px] text-muted">
+              {conversation.characterId
+                ? characterMap.get(conversation.characterId)?.name ??
+                  t(language, "unknownCharacter")
+                : t(language, "noCharacterSelected")}
+            </span>
+          </div>
           <button
             onClick={(event) => {
               event.stopPropagation();

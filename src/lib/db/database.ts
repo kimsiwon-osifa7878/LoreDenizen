@@ -23,6 +23,13 @@ export class AppDatabase extends Dexie {
       downloadedModels: "id, hfRepo, downloadedAt",
       settings: "id",
     });
+    this.version(2).stores({
+      conversations: "id, characterId, updatedAt",
+      messages: "id, conversationId, createdAt",
+      characters: "id, name, *tags",
+      downloadedModels: "id, hfRepo, downloadedAt",
+      settings: "id",
+    });
   }
 }
 
