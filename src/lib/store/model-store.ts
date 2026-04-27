@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import type { DownloadedModel, ModelProvider } from "../types";
+import type {
+  DownloadedModel,
+  ModelProvider,
+  OpenRouterModelItem,
+  OpenRouterSort,
+} from "../types";
 import {
   getAllDownloadedModels,
   addDownloadedModel,
@@ -9,6 +14,11 @@ import {
 import { llmEngine } from "../llm/engine";
 import { getSettings, updateSettings } from "../db/settings";
 
+interface OpenRouterListResponse {
+  items?: OpenRouterModelItem[];
+  hasMore?: boolean;
+}
+
 interface ModelState {
   models: DownloadedModel[];
   activeModelId: string | null;
@@ -16,12 +26,21 @@ interface ModelState {
   isDownloading: boolean;
   downloadProgress: { loaded: number; total: number } | null;
   isLoadingModel: boolean;
-  openRouterModels: string[];
   openRouterHasEnvApiKey: boolean;
+  openRouterModels: OpenRouterModelItem[];
+  openRouterQuery: string;
+  openRouterSort: OpenRouterSort;
+  openRouterOffset: number;
+  openRouterHasMore: boolean;
+  isLoadingOpenRouterModels: boolean;
   ollamaUrl: string;
   ollamaModels: string[];
   loadModels: () => Promise<void>;
   loadRemoteConfigs: () => Promise<void>;
+  setOpenRouterQuery: (query: string) => void;
+  setOpenRouterSort: (sort: OpenRouterSort) => Promise<void>;
+  searchOpenRouterModels: (query?: string) => Promise<void>;
+  loadMoreOpenRouterModels: () => Promise<void>;
   downloadModel: (
     hfRepo: string,
     fileName: string,
@@ -36,6 +55,31 @@ interface ModelState {
   unloadModel: () => Promise<void>;
 }
 
+const OPENROUTER_PAGE_SIZE = 10;
+
+async function fetchOpenRouterModels(
+  query: string,
+  sort: OpenRouterSort,
+  offset: number
+): Promise<OpenRouterListResponse> {
+  const params = new URLSearchParams({
+    q: query,
+    sort,
+    offset: String(offset),
+    limit: String(OPENROUTER_PAGE_SIZE),
+  });
+
+  const response = await fetch(`/api/openrouter/models?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("OPENROUTER_MODELS_LOAD_FAILED");
+  }
+
+  return (await response.json()) as OpenRouterListResponse;
+}
+
 export const useModelStore = create<ModelState>((set, get) => ({
   models: [],
   activeModelId: null,
@@ -43,8 +87,13 @@ export const useModelStore = create<ModelState>((set, get) => ({
   isDownloading: false,
   downloadProgress: null,
   isLoadingModel: false,
-  openRouterModels: [],
   openRouterHasEnvApiKey: false,
+  openRouterModels: [],
+  openRouterQuery: "",
+  openRouterSort: "created_desc",
+  openRouterOffset: 0,
+  openRouterHasMore: false,
+  isLoadingOpenRouterModels: false,
   ollamaUrl: "http://localhost:11434",
   ollamaModels: [],
 
@@ -79,15 +128,75 @@ export const useModelStore = create<ModelState>((set, get) => ({
       const response = await fetch("/api/openrouter/config", { cache: "no-store" });
       const data = (await response.json()) as {
         hasApiKey?: boolean;
-        models?: string[];
       };
 
       set({
         openRouterHasEnvApiKey: Boolean(data.hasApiKey),
-        openRouterModels: Array.isArray(data.models) ? data.models : [],
       });
+
+      await get().searchOpenRouterModels();
     } catch {
-      set({ openRouterHasEnvApiKey: false, openRouterModels: [] });
+      set({
+        openRouterHasEnvApiKey: false,
+        openRouterModels: [],
+        openRouterHasMore: false,
+      });
+    }
+  },
+
+  setOpenRouterQuery: (query) => {
+    set({ openRouterQuery: query });
+  },
+
+  setOpenRouterSort: async (sort) => {
+    set({ openRouterSort: sort });
+    await get().searchOpenRouterModels();
+  },
+
+  searchOpenRouterModels: async (query) => {
+    const nextQuery = query ?? get().openRouterQuery;
+
+    set({
+      isLoadingOpenRouterModels: true,
+      openRouterOffset: 0,
+      openRouterQuery: nextQuery,
+    });
+
+    try {
+      const payload = await fetchOpenRouterModels(nextQuery, get().openRouterSort, 0);
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      set({
+        openRouterModels: items,
+        openRouterHasMore: Boolean(payload.hasMore),
+        openRouterOffset: items.length,
+      });
+    } finally {
+      set({ isLoadingOpenRouterModels: false });
+    }
+  },
+
+  loadMoreOpenRouterModels: async () => {
+    if (get().isLoadingOpenRouterModels || !get().openRouterHasMore) {
+      return;
+    }
+
+    set({ isLoadingOpenRouterModels: true });
+
+    try {
+      const payload = await fetchOpenRouterModels(
+        get().openRouterQuery,
+        get().openRouterSort,
+        get().openRouterOffset
+      );
+      const items = Array.isArray(payload.items) ? payload.items : [];
+
+      set((state) => ({
+        openRouterModels: [...state.openRouterModels, ...items],
+        openRouterHasMore: Boolean(payload.hasMore),
+        openRouterOffset: state.openRouterModels.length + items.length,
+      }));
+    } finally {
+      set({ isLoadingOpenRouterModels: false });
     }
   },
 

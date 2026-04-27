@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { t } from "@/lib/i18n";
 import { useModelStore } from "@/lib/store/model-store";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { useUIStore } from "@/lib/store/ui-store";
-import type { AppLanguage } from "@/lib/types";
+import type { AppLanguage, OpenRouterSort } from "@/lib/types";
 import { ModelDownloader } from "./ModelDownloader";
 
 export function ModelManager() {
@@ -18,7 +18,7 @@ export function ModelManager() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-2xl border border-border bg-background">
+      <div className="flex max-h-[85vh] w-full max-w-5xl flex-col rounded-2xl border border-border bg-background">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="text-lg font-semibold">{t(language, "settings")}</h2>
           <button
@@ -136,12 +136,31 @@ function MyModels() {
   );
 }
 
+const OPENROUTER_SORT_OPTIONS: Array<{ label: string; value: OpenRouterSort }> = [
+  { label: "최신 등록순", value: "created_desc" },
+  { label: "컨텍스트 긴 순", value: "context_desc" },
+  { label: "입력 비용 낮은 순", value: "pricing_prompt_asc" },
+  { label: "출력 비용 낮은 순", value: "pricing_completion_asc" },
+  { label: "이름순", value: "name_asc" },
+];
+
 function OpenRouterSettings() {
   const activeModelId = useModelStore((s) => s.activeModelId);
-  const openRouterModels = useModelStore((s) => s.openRouterModels);
+  const models = useModelStore((s) => s.openRouterModels);
   const openRouterHasEnvApiKey = useModelStore((s) => s.openRouterHasEnvApiKey);
+  const isLoading = useModelStore((s) => s.isLoadingOpenRouterModels);
+  const hasMore = useModelStore((s) => s.openRouterHasMore);
+  const storeQuery = useModelStore((s) => s.openRouterQuery);
+  const storeSort = useModelStore((s) => s.openRouterSort);
+  const setOpenRouterQuery = useModelStore((s) => s.setOpenRouterQuery);
+  const setOpenRouterSort = useModelStore((s) => s.setOpenRouterSort);
+  const searchOpenRouterModels = useModelStore((s) => s.searchOpenRouterModels);
+  const loadMoreOpenRouterModels = useModelStore((s) => s.loadMoreOpenRouterModels);
   const connectOpenRouter = useModelStore((s) => s.connectOpenRouter);
+
+  const [queryInput, setQueryInput] = useState(storeQuery);
   const [selectedModel, setSelectedModel] = useState("");
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const selectedFromActive = useMemo(() => {
     if (!activeModelId?.startsWith("openrouter::")) {
@@ -151,10 +170,37 @@ function OpenRouterSettings() {
     return activeModelId.replace("openrouter::", "");
   }, [activeModelId]);
 
+  useEffect(() => {
+    setQueryInput(storeQuery);
+  }, [storeQuery]);
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node) {
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      const target = entries[0];
+      if (target?.isIntersecting && hasMore && !isLoading) {
+        void loadMoreOpenRouterModels();
+      }
+    });
+
+    observer.observe(node);
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, loadMoreOpenRouterModels]);
+
+  async function handleSearch() {
+    setOpenRouterQuery(queryInput);
+    await searchOpenRouterModels(queryInput);
+  }
+
   async function handleConnect() {
-    const model = selectedModel || selectedFromActive || openRouterModels[0];
+    const model = selectedModel || selectedFromActive;
     if (!model) {
-      window.alert("OPENROUTER_MODELS 환경변수에 모델을 설정해 주세요.");
+      window.alert("연결할 OpenRouter 모델을 먼저 선택해 주세요.");
       return;
     }
 
@@ -182,35 +228,122 @@ function OpenRouterSettings() {
       </div>
 
       <div className="rounded-lg border border-border p-3">
-        <p className="mb-2 text-sm font-medium">모델 선택 (.env / .env.local)</p>
-        <select
-          value={selectedModel || selectedFromActive}
-          onChange={(event) => setSelectedModel(event.target.value)}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-        >
-          <option value="">모델을 선택하세요</option>
-          {openRouterModels.map((model) => (
-            <option key={model} value={model}>
-              {model}
-            </option>
-          ))}
-        </select>
-        {!openRouterHasEnvApiKey && (
-          <p className="mt-2 text-xs text-amber-600">
-            서버 환경변수 API key가 없습니다. Connect 시 세션용 API key를 입력받습니다.
-          </p>
-        )}
+        <div className="mb-3 flex flex-wrap items-end gap-2">
+          <div className="min-w-[240px] flex-1">
+            <label className="mb-1 block text-xs text-muted">검색</label>
+            <input
+              value={queryInput}
+              onChange={(event) => setQueryInput(event.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              placeholder="모델 이름 검색"
+            />
+          </div>
+          <div className="min-w-[180px]">
+            <label className="mb-1 block text-xs text-muted">Sort</label>
+            <select
+              value={storeSort}
+              onChange={(event) => {
+                void setOpenRouterSort(event.target.value as OpenRouterSort);
+              }}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            >
+              {OPENROUTER_SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              void handleSearch();
+            }}
+            className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover"
+          >
+            검색
+          </button>
+        </div>
+
+        <div className="h-[360px] overflow-y-auto rounded-lg border border-border">
+          {models.length === 0 && !isLoading ? (
+            <p className="p-4 text-sm text-muted">검색 결과가 없습니다.</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {models.map((model) => {
+                const isSelected = (selectedModel || selectedFromActive) === model.id;
+
+                return (
+                  <button
+                    key={model.id}
+                    type="button"
+                    onClick={() => setSelectedModel(model.id)}
+                    className={`w-full p-3 text-left transition-colors ${
+                      isSelected ? "bg-accent/10" : "hover:bg-bubble-assistant/40"
+                    }`}
+                  >
+                    <p className="text-sm font-medium">{model.id}</p>
+                    <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted sm:grid-cols-4">
+                      <span>Input: {formatPrice(model.promptPrice)}</span>
+                      <span>Output: {formatPrice(model.completionPrice)}</span>
+                      <span>Context: {formatContext(model.contextLength)}</span>
+                      <span>Release: {formatDate(model.created)}</span>
+                    </div>
+                  </button>
+                );
+              })}
+              <div ref={sentinelRef} className="h-4" />
+            </div>
+          )}
+
+          {isLoading && <p className="p-3 text-center text-xs text-muted">불러오는 중...</p>}
+          {!hasMore && models.length > 0 && (
+            <p className="p-3 text-center text-xs text-muted">최대 100개 모델을 표시했습니다.</p>
+          )}
+        </div>
       </div>
+
+      {!openRouterHasEnvApiKey && (
+        <p className="text-xs text-amber-600">
+          서버 환경변수 API key가 없습니다. Connect 시 세션용 API key를 입력받습니다.
+        </p>
+      )}
 
       <button
         type="button"
-        onClick={handleConnect}
+        onClick={() => {
+          void handleConnect();
+        }}
         className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover"
       >
         Connect OpenRouter
       </button>
     </div>
   );
+}
+
+function formatPrice(value: number | null): string {
+  if (value === null) {
+    return "-";
+  }
+
+  return `$${value.toFixed(6)}/tok`;
+}
+
+function formatContext(value: number | null): string {
+  if (!value) {
+    return "-";
+  }
+
+  return value.toLocaleString();
+}
+
+function formatDate(value: number | null): string {
+  if (!value) {
+    return "-";
+  }
+
+  return new Date(value * 1000).toISOString().slice(0, 10);
 }
 
 function OllamaSettings() {
@@ -259,7 +392,9 @@ function OllamaSettings() {
           />
           <button
             type="button"
-            onClick={handleConnect}
+            onClick={() => {
+              void handleConnect();
+            }}
             className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover"
           >
             Connect
@@ -274,7 +409,9 @@ function OllamaSettings() {
         ) : (
           <select
             value={selectedModel}
-            onChange={(event) => handleSelectModel(event.target.value)}
+            onChange={(event) => {
+              void handleSelectModel(event.target.value);
+            }}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
           >
             <option value="">모델을 선택하세요</option>
