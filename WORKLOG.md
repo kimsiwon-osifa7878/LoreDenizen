@@ -18,3 +18,19 @@
 - `src/app/api/openrouter/config/route.ts`
 - `src/lib/types/index.ts`
 - `README.md`
+
+### OpenRouter 다국어/비용 표기 및 선택 플로우 개선
+- OpenRouter/Ollama 설정 탭의 하드코딩 한국어 문구를 i18n 키로 치환하여 영어 UI에서도 문구가 영어로 일관되게 표시되도록 수정.
+- OpenRouter 모델 가격 표기를 `$ / token`에서 `$ / 1M tokens` 단위로 변경.
+- OpenRouter 모델 리스트 각 행에 개별 `Select` 버튼을 추가하고, 선택 시 즉시 연결되도록 UX 변경.
+- `.env`에 `OPENROUTER_API_KEY`가 없는 경우, 모델 선택 시점에 세션용 API key 입력 팝업을 띄우도록 유지/정리.
+- 하단의 `Connect OpenRouter` 버튼 제거.
+
+### OpenRouter 최신 모델 노출 이슈 대응
+- 기존 필터가 텍스트 이외 모달리티(image/audio/video)를 포함한 모델을 제외하고 있어, 텍스트 입출력을 지원하는 최신 멀티모달 모델이 목록에서 누락될 수 있음을 확인.
+- 필터를 "텍스트 입력 + 텍스트 출력 가능 모델" 기준으로 완화하여 최신 GPT 계열(멀티모달 포함)도 목록에 노출될 수 있도록 수정.
+
+### 관련 파일
+- `src/components/model/ModelManager.tsx`
+- `src/lib/i18n.ts`
+- `src/app/api/openrouter/models/route.ts`

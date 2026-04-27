@@ -45,24 +45,21 @@ function toNumber(value: string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function isTextOnlyModel(model: OpenRouterModelResponse): boolean {
+function isChatCapableTextModel(model: OpenRouterModelResponse): boolean {
   const modality = model.architecture?.modality?.toLowerCase() ?? "";
   const inputs = (model.architecture?.input_modalities ?? []).map((v) => v.toLowerCase());
   const outputs = (model.architecture?.output_modalities ?? []).map((v) => v.toLowerCase());
 
-  const merged = [modality, ...inputs, ...outputs].join(",");
-  const hasText = merged.includes("text");
-  const hasBlockedModalities = ["image", "audio", "video"].some((key) => merged.includes(key));
+  const hasTextInput =
+    inputs.includes("text") || modality.includes("text->");
+  const hasTextOutput =
+    outputs.includes("text") || modality.includes("->text");
 
-  if (!hasText) {
+  if (!hasTextInput || !hasTextOutput) {
     return false;
   }
 
-  if (modality.includes("text->text")) {
-    return true;
-  }
-
-  return !hasBlockedModalities;
+  return true;
 }
 
 function sortModels(models: OpenRouterModelResponse[], sort: OpenRouterSort): OpenRouterModelResponse[] {
@@ -111,7 +108,7 @@ export async function GET(request: Request) {
   const source = Array.isArray(payload.data) ? payload.data : [];
 
   const filtered = source.filter((model) => {
-    if (!isTextOnlyModel(model)) {
+    if (!isChatCapableTextModel(model)) {
       return false;
     }
 
