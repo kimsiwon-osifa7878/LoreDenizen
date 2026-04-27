@@ -63,10 +63,15 @@ export interface HfRepoFile {
 
 export type ModelCompatibility = "supported" | "unsupported" | "unknown";
 export type AppLanguage = "en" | "ko";
+export type ModelProvider = "local" | "openrouter" | "ollama";
 
 export interface AppSettings {
   id: "global";
   activeModelId: string | null;
+  activeProvider: ModelProvider | null;
+  openRouterModel: string | null;
+  ollamaUrl: string;
+  ollamaModel: string | null;
   defaultCharacterId: string | null;
   theme: "light" | "dark" | "system";
   language: AppLanguage;

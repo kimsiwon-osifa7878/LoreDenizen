@@ -43,6 +43,22 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium pnpm test:e2e
 ]
 ```
 
+
+`OPENROUTER_MODELS` example:
+
+```json
+[
+  "openai/gpt-4o-mini",
+  "anthropic/claude-3.5-sonnet"
+]
+```
+
+Additional variables:
+
+- `OPENROUTER_API_KEY`: server-side OpenRouter API key (optional; if empty, UI asks for one-time session key).
+- `OPENROUTER_MODELS`: allowed OpenRouter model list shown in the Settings dialog.
+- `ollamaUrl` defaults to `http://localhost:11434` in app settings and can be changed by user.
+
 - Local development: `.env.local`
 - Production or Vercel: `.env` or server environment variables
 
