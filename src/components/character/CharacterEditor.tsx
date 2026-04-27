@@ -1,64 +1,44 @@
 "use client";
 
-import { useState, useEffect, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { t } from "@/lib/i18n";
 import {
+  EMPTY_PROMPT_SECTIONS,
+  buildCharacterSystemPrompt,
   createCharacter,
   deleteCharacter,
   getCharacter,
+  getCharacterPromptSections,
   updateCharacter,
 } from "@/lib/db/characters";
 import { useChatStore } from "@/lib/store/chat-store";
 import { useSettingsStore } from "@/lib/store/settings-store";
 import { useUIStore } from "@/lib/store/ui-store";
-import type { AppLanguage } from "@/lib/types";
+import type { CharacterPromptSections } from "@/lib/types";
 
-const EMOJI_OPTIONS = [
-  "AI",
-  "🙂",
-  "🤖",
-  "🧑‍🏫",
-  "💻",
-  "📚",
-  "✨",
-  "🧠",
-  "🌙",
-  "🔥",
-  "🎨",
-  "🎭",
+const EMOJI_OPTIONS = ["AI", "E", "T", "V", "R", "M", "S", "K", "L", "N"];
+
+const PROMPT_SECTION_FIELDS: Array<{
+  key: keyof CharacterPromptSections;
+  label: string;
+  rows: number;
+}> = [
+  { key: "description", label: "Description", rows: 8 },
+  { key: "personality", label: "Personality", rows: 10 },
+  { key: "scenario", label: "Scenario", rows: 5 },
+  { key: "firstMessage", label: "First Message", rows: 8 },
+  { key: "exampleMessages", label: "Example Messages", rows: 8 },
+  { key: "authorNote", label: "System Prompt / Author's Note", rows: 5 },
 ];
 
-function getTemplatePrompt(language: AppLanguage): string {
-  if (language === "ko") {
-    return `당신의 이름은 {{name}}입니다.
-
-## 성격
-(여기에 캐릭터의 성격을 작성하세요)
-
-## 말투
-(여기에 캐릭터의 말투를 작성하세요)
-
-## 세계관
-(여기에 배경 설정을 작성하세요)
-
-## 규칙
-(여기에 행동 규칙을 작성하세요)`;
-  }
-
-  return `Your name is {{name}}.
-
-## Personality
-(Describe the character's personality here)
-
-## Speaking style
-(Describe the character's tone and voice here)
-
-## Background
-(Describe the setting or backstory here)
-
-## Rules
-(Describe behavior rules here)`;
-}
+const DEFAULT_OPEN_SECTIONS: Record<keyof CharacterPromptSections, boolean> = {
+  description: true,
+  personality: false,
+  scenario: false,
+  firstMessage: false,
+  exampleMessages: false,
+  authorNote: false,
+};
 
 export function CharacterEditor() {
   const open = useUIStore((s) => s.characterEditorOpen);
@@ -70,12 +50,15 @@ export function CharacterEditor() {
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState("AI");
   const [description, setDescription] = useState("");
-  const [systemPrompt, setSystemPrompt] = useState(getTemplatePrompt(language));
+  const [promptSections, setPromptSections] =
+    useState<CharacterPromptSections>(EMPTY_PROMPT_SECTIONS);
+  const [openSections, setOpenSections] = useState(DEFAULT_OPEN_SECTIONS);
   const [tags, setTags] = useState("");
   const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
+    setOpenSections(DEFAULT_OPEN_SECTIONS);
 
     if (editingId) {
       getCharacter(editingId).then((character) => {
@@ -83,7 +66,7 @@ export function CharacterEditor() {
           setName(character.name);
           setAvatar(character.avatar);
           setDescription(character.description);
-          setSystemPrompt(character.systemPrompt);
+          setPromptSections(getCharacterPromptSections(character));
           setTags(character.tags.join(", "));
           setImages(character.images ?? []);
         }
@@ -94,10 +77,10 @@ export function CharacterEditor() {
     setName("");
     setAvatar("AI");
     setDescription("");
-    setSystemPrompt(getTemplatePrompt(language));
+    setPromptSections(EMPTY_PROMPT_SECTIONS);
     setTags("");
     setImages([]);
-  }, [open, editingId, language]);
+  }, [open, editingId]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -106,7 +89,8 @@ export function CharacterEditor() {
       name: name.trim(),
       avatar,
       description: description.trim(),
-      systemPrompt,
+      promptSections,
+      systemPrompt: buildCharacterSystemPrompt(promptSections),
       images,
       tags: tags
         .split(",")
@@ -132,8 +116,6 @@ export function CharacterEditor() {
     setOpen(false);
   };
 
-  if (!open) return null;
-
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files?.length) return;
@@ -152,9 +134,22 @@ export function CharacterEditor() {
     event.target.value = "";
   };
 
+  const updatePromptSection = (
+    key: keyof CharacterPromptSections,
+    value: string
+  ) => {
+    setPromptSections((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const togglePromptSection = (key: keyof CharacterPromptSections) => {
+    setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  if (!open) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[85vh] w-full max-w-lg flex-col rounded-2xl border border-border bg-background">
+      <div className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-2xl border border-border bg-background">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="text-lg font-semibold">
             {editingId
@@ -180,7 +175,7 @@ export function CharacterEditor() {
                 <button
                   key={emoji}
                   onClick={() => setAvatar(emoji)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-lg text-xl transition-colors ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-lg text-lg transition-colors ${
                     avatar === emoji
                       ? "bg-accent/20 ring-2 ring-accent"
                       : "bg-bubble-assistant hover:bg-border"
@@ -271,16 +266,39 @@ export function CharacterEditor() {
             />
           </div>
 
-          <div>
-            <label className="mb-1 block text-sm font-medium">
+          <div className="space-y-2">
+            <div className="text-sm font-medium">
               {t(language, "systemPrompt")}
-            </label>
-            <textarea
-              value={systemPrompt}
-              onChange={(event) => setSystemPrompt(event.target.value)}
-              rows={10}
-              className="w-full resize-y rounded-lg border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent"
-            />
+            </div>
+            {PROMPT_SECTION_FIELDS.map((field) => (
+              <div
+                key={field.key}
+                className="overflow-hidden rounded-lg border border-border"
+              >
+                <button
+                  type="button"
+                  onClick={() => togglePromptSection(field.key)}
+                  className="flex w-full items-center justify-between bg-bubble-assistant px-3 py-2 text-left text-sm font-medium hover:bg-border/70"
+                >
+                  <span>[{field.label}]</span>
+                  <span className="text-xs text-muted">
+                    {openSections[field.key]
+                      ? t(language, "collapse")
+                      : t(language, "expand")}
+                  </span>
+                </button>
+                {openSections[field.key] && (
+                  <textarea
+                    value={promptSections[field.key]}
+                    onChange={(event) =>
+                      updatePromptSection(field.key, event.target.value)
+                    }
+                    rows={field.rows}
+                    className="w-full resize-y border-t border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                  />
+                )}
+              </div>
+            ))}
           </div>
         </div>
 

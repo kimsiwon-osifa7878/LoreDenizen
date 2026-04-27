@@ -21,10 +21,20 @@ export interface Character {
   avatar: string;
   images: string[];
   systemPrompt: string;
+  promptSections?: CharacterPromptSections;
   description: string;
   tags: string[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CharacterPromptSections {
+  description: string;
+  personality: string;
+  scenario: string;
+  firstMessage: string;
+  exampleMessages: string;
+  authorNote: string;
 }
 
 export interface DownloadedModel {

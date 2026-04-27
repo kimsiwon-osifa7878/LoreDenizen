@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/sidebar/Sidebar";
 import { ChatContainer } from "@/components/chat/ChatContainer";
 import { ModelManager } from "@/components/model/ModelManager";
 import { CharacterEditor } from "@/components/character/CharacterEditor";
+import { CharacterPickerDialog } from "@/components/sidebar/CharacterPickerDialog";
 import { useChatStore } from "@/lib/store/chat-store";
 import { useModelStore } from "@/lib/store/model-store";
 import { useSettingsStore } from "@/lib/store/settings-store";
@@ -42,6 +43,7 @@ export default function Home() {
       <Sidebar />
       <ChatContainer />
       <ModelManager />
+      <CharacterPickerDialog />
       <CharacterEditor />
     </div>
   );

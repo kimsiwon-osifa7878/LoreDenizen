@@ -32,7 +32,6 @@ interface ChatState {
   deleteConv: (id: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   stopGeneration: () => void;
-  setActiveCharacter: (character: Character | null) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
@@ -56,7 +55,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       characters,
       activeCharacter: state.activeCharacter
         ? characters.find((item) => item.id === state.activeCharacter?.id) ?? null
-        : characters[0] ?? null,
+        : null,
     }));
   },
 
@@ -101,7 +100,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   deleteConv: async (id) => {
     await deleteConversation(id);
     if (get().activeConversationId === id) {
-      set({ activeConversationId: null, messages: [] });
+      set({ activeConversationId: null, messages: [], activeCharacter: null });
     }
     await get().loadConversations();
   },
@@ -189,6 +188,4 @@ export const useChatStore = create<ChatState>((set, get) => ({
   stopGeneration: () => {
     llmEngine.stopGeneration();
   },
-
-  setActiveCharacter: (character) => set({ activeCharacter: character }),
 }));

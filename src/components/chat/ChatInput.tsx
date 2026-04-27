@@ -55,13 +55,18 @@ export function ChatInput() {
             adjustHeight();
           }}
           onKeyDown={handleKeyDown}
+          disabled={requiresCharacterSelection}
           placeholder={
             requiresCharacterSelection
               ? t(language, "characterRequiredToSend")
               : t(language, "messagePlaceholder")
           }
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+          className={`flex-1 resize-none rounded-xl border border-border px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent ${
+            requiresCharacterSelection
+              ? "cursor-not-allowed bg-border/30 text-muted"
+              : "bg-background"
+          }`}
         />
         {isGenerating ? (
           <button

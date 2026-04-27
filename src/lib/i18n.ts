@@ -84,6 +84,10 @@ const translations = {
       "A model is not loaded. Download and select a model first.",
     chooseCharacter: "Choose a character",
     chooseCharacterToStart: "Select a character before starting a new chat.",
+    setupRequiredTitle: "Conversation setup required",
+    setupRequiredDescription:
+      "Select a model in Settings, then choose a character to start a new chat.",
+    openModelSettings: "Model settings",
     openPersonaEditor: "Persona",
     savePersona: "Save persona",
     selectThisCharacter: "Select",
@@ -174,6 +178,10 @@ const translations = {
       "모델이 로드되지 않았습니다. 모델을 먼저 다운로드하고 선택해주세요.",
     chooseCharacter: "캐릭터 선택",
     chooseCharacterToStart: "새 대화를 시작하기 전에 캐릭터를 선택하세요.",
+    setupRequiredTitle: "대화 준비가 필요합니다",
+    setupRequiredDescription:
+      "설정에서 모델을 선택하고, 새 대화에서 캐릭터를 선택하세요.",
+    openModelSettings: "모델 설정",
     openPersonaEditor: "페르소나",
     savePersona: "페르소나 저장",
     selectThisCharacter: "선택",
