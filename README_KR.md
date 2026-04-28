@@ -81,6 +81,32 @@ pnpm dev
    - Ollama: 서버 URL 연결 후 모델 선택
 4. 이후 대화를 진행하면 기록과 설정이 브라우저 저장소에 유지됩니다.
 
+## 스크린샷
+
+### 1) 메인 앱 레이아웃
+
+기본 진입 상태에서 사이드바, 캐릭터 목록, 채팅 영역이 어떻게 보이는지 보여줍니다.
+
+![메인 앱 레이아웃](docs/screenshots/app-home.png)
+
+### 2) 캐릭터 선택 다이얼로그
+
+**새 대화**를 누르면 열리는 화면으로, LoreDenizen의 캐릭터 우선 시작 흐름을 보여줍니다.
+
+![캐릭터 선택 다이얼로그](docs/screenshots/character-picker-dialog.png)
+
+### 3) First Message 자동 삽입
+
+캐릭터를 선택하면 해당 캐릭터의 First Message가 대화 시작 시 자동으로 들어갑니다.
+
+![First Message 자동 삽입](docs/screenshots/first-message-seeded.png)
+
+### 4) Ollama 설정 탭
+
+원격/로컬 Ollama URL 연결과 모델 선택 UI를 확인할 수 있습니다.
+
+![Ollama 설정 탭](docs/screenshots/settings-ollama.png)
+
 ## 테스트
 
 Playwright 브라우저 설치:

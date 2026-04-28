@@ -13,6 +13,7 @@ import {
 } from "../llm/model-manager";
 import { llmEngine } from "../llm/engine";
 import { getSettings, updateSettings } from "../db/settings";
+import { DEFAULT_OLLAMA_URL, normalizeOllamaUrl } from "../ollama/url";
 
 interface OpenRouterListResponse {
   items?: OpenRouterModelItem[];
@@ -99,7 +100,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
   openRouterOffset: 0,
   openRouterHasMore: false,
   isLoadingOpenRouterModels: false,
-  ollamaUrl: "http://localhost:11434",
+  ollamaUrl: DEFAULT_OLLAMA_URL,
   ollamaModels: [],
 
   loadModels: async () => {
@@ -279,10 +280,11 @@ export const useModelStore = create<ModelState>((set, get) => ({
   },
 
   connectOllama: async (url) => {
-    const normalizedUrl = url.trim().replace(/\/$/, "") || "http://localhost:11434";
-    const response = await fetch(`${normalizedUrl}/api/tags`, {
-      method: "GET",
+    const normalizedUrl = normalizeOllamaUrl(url);
+    const response = await fetch("/api/ollama/tags", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: normalizedUrl }),
     });
 
     if (!response.ok) {
@@ -290,15 +292,15 @@ export const useModelStore = create<ModelState>((set, get) => ({
     }
 
     const payload = (await response.json()) as {
-      models?: Array<{ name?: string }>;
+      normalizedUrl?: string;
+      models?: string[];
     };
 
-    const models = (payload.models ?? [])
-      .map((item) => item.name?.trim() ?? "")
-      .filter(Boolean);
+    const resolvedUrl = payload.normalizedUrl ?? normalizedUrl;
+    const models = (payload.models ?? []).map((name) => name.trim()).filter(Boolean);
 
-    set({ ollamaUrl: normalizedUrl, ollamaModels: models });
-    await updateSettings({ ollamaUrl: normalizedUrl });
+    set({ ollamaUrl: resolvedUrl, ollamaModels: models });
+    await updateSettings({ ollamaUrl: resolvedUrl });
 
     return models;
   },

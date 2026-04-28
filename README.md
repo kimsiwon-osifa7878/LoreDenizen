@@ -90,6 +90,32 @@ Open `http://localhost:3000`.
    - Ollama: connect URL and choose a discovered model.
 4. Start chatting; app state and history persist in browser storage.
 
+## Screenshots
+
+### 1) Main app layout
+
+Shows the default start state with sidebar, character list, and chat panel.
+
+![Main app layout](docs/screenshots/app-home.png)
+
+### 2) Character picker dialog
+
+Triggered by **New chat**. Conversation creation is character-first.
+
+![Character picker dialog](docs/screenshots/character-picker-dialog.png)
+
+### 3) First message seeding
+
+After selecting a character, the character's configured first message is inserted automatically.
+
+![First message seeded](docs/screenshots/first-message-seeded.png)
+
+### 4) Ollama settings tab
+
+Shows the provider connection UI for custom Ollama URL and model selection.
+
+![Ollama settings](docs/screenshots/settings-ollama.png)
+
 ## Testing
 
 Install Playwright browser:

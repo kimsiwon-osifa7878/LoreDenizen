@@ -2,6 +2,7 @@
 
 import { Wllama } from "@wllama/wllama";
 import type { ModelProvider } from "../types";
+import { DEFAULT_OLLAMA_URL, normalizeOllamaUrl } from "../ollama/url";
 
 const CONFIG_PATHS = {
   "single-thread/wllama.wasm": "/wasm/single-thread/wllama.wasm",
@@ -23,7 +24,7 @@ class LLMEngine {
   private currentModelId: string | null = null;
   private currentProvider: ModelProvider | null = null;
   private openRouterApiKey: string | null = null;
-  private ollamaUrl = "http://localhost:11434";
+  private ollamaUrl = DEFAULT_OLLAMA_URL;
   private isLoading = false;
   private abortController: AbortController | null = null;
 
@@ -41,7 +42,7 @@ class LLMEngine {
   }
 
   setOllamaUrl(url: string): void {
-    this.ollamaUrl = url;
+    this.ollamaUrl = normalizeOllamaUrl(url);
   }
 
   async downloadModel(
@@ -82,7 +83,7 @@ class LLMEngine {
 
   configureOllama(model: string, url: string): void {
     this.currentProvider = "ollama";
-    this.ollamaUrl = url;
+    this.ollamaUrl = normalizeOllamaUrl(url);
     this.currentModelId = `ollama::${model}`;
   }
 
@@ -179,33 +180,30 @@ class LLMEngine {
     }
 
     const model = this.currentModelId.replace("ollama::", "");
-    const response = await fetch(`${this.ollamaUrl}/api/chat`, {
+    const response = await fetch("/api/ollama/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        url: this.ollamaUrl,
         model,
         messages: this.withNoThinkInstruction(messages),
-        stream: false,
-        options: {
+        params: {
           temperature: params.temperature,
-          top_p: params.topP,
-          top_k: params.topK,
-          repeat_penalty: params.repeatPenalty,
-          num_predict: params.maxTokens,
+          topP: params.topP,
+          topK: params.topK,
+          repeatPenalty: params.repeatPenalty,
+          maxTokens: params.maxTokens,
         },
       }),
     });
 
-    const payload = (await response.json()) as {
-      message?: { content?: string };
-      error?: string;
-    };
+    const payload = (await response.json()) as { content?: string; error?: string };
 
-    if (!response.ok || !payload.message?.content) {
+    if (!response.ok || !payload.content) {
       throw new Error(payload.error || "Ollama 요청 실패");
     }
 
-    const visibleText = stripThinkBlocks(payload.message.content);
+    const visibleText = stripThinkBlocks(payload.content);
     onToken(visibleText, visibleText);
     return visibleText;
   }
