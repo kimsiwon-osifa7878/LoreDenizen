@@ -208,8 +208,12 @@ function OpenRouterSettings() {
       sessionApiKey = input.trim();
     }
 
-    await connectOpenRouter(model, sessionApiKey);
-    window.alert(t(language, "openRouterConnected", { model }));
+    try {
+      await connectOpenRouter(model, sessionApiKey);
+      window.alert(t(language, "openRouterConnected", { model }));
+    } catch {
+      window.alert(t(language, "openRouterInvalidApiKey"));
+    }
   }
 
   const openRouterSortOptions: Array<{ label: string; value: OpenRouterSort }> = [
