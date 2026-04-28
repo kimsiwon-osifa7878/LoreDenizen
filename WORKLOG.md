@@ -34,3 +34,12 @@
 - `src/components/model/ModelManager.tsx`
 - `src/lib/i18n.ts`
 - `src/app/api/openrouter/models/route.ts`
+
+## 2026-04-28
+
+### 최종 프롬프트 언어 고정 지시 추가
+- 채팅 전송 시 모델에 전달되는 최종 시스템 프롬프트에 "설정 언어로 응답" 지시를 추가.
+- 설정 언어가 `ko`면 한국어 응답을, `en`이면 영어 응답을 강제하는 시스템 메시지를 항상 포함하도록 수정.
+
+### 관련 파일
+- `src/lib/store/chat-store.ts`

@@ -1,21 +1,51 @@
 # LoreDenizen
 
-LoreDenizen is a browser-first character chat app where users can run their own GGUF models locally, edit persona/system prompts freely, and continue conversations with persistent client-side storage.
+**Your own AI characters, running from your browser.**
 
-## Why this project matters
+LoreDenizen is a browser-first character AI chat app for people who want more control over their AI companions, roleplay characters, assistants, and prompt-driven personas.
 
-- **Personal AI in your browser**: model download, caching, and inference are designed around browser runtime usage.
-- **Character-first chat UX**: each conversation starts from a selected character and supports structured character prompt sections including a seeded first message.
-- **Pluggable model providers**: local GGUF + OpenRouter + Ollama in a unified UI.
-- **Persistent user data**: conversations, messages, characters, and settings are saved in IndexedDB.
+Instead of locking the experience behind a single hosted model, LoreDenizen lets you choose your runtime:
 
-## Key features
+- run local GGUF models in the browser,
+- connect to OpenRouter,
+- or use your own Ollama server.
 
-- Character picker for new chats.
-- Auto-seeded **First Message** when a chat starts with a character.
-- Language-aware system prompt extension (responses are instructed to follow the selected app language).
-- OpenRouter model selection with API key validation and safer session restore behavior.
-- Model management tabs for local GGUF, OpenRouter, and Ollama.
+Characters are not just names in a dropdown.  
+Each character can carry its own system prompt, structured persona, language behavior, and seeded first message, so every new conversation starts inside a living world.
+
+## Why LoreDenizen?
+
+Most AI chat apps focus on the model.  
+LoreDenizen focuses on the character experience around the model.
+
+It gives users a place to create, edit, select, and talk to AI characters while keeping conversations, messages, characters, and settings persisted in browser storage.
+
+## Highlights
+
+- **Browser-first local AI**  
+  Designed around browser-based model download, caching, and inference.
+- **Character-first conversations**  
+  Start every chat by choosing a character. The character’s First Message appears automatically.
+- **Editable personas and system prompts**  
+  Freely shape personality, tone, lore, behavior rules, and language style.
+- **Multiple model providers**  
+  Use local GGUF, OpenRouter, or Ollama from a unified model manager.
+- **Persistent client-side data**  
+  Conversations, messages, characters, downloaded model metadata, and settings are stored with IndexedDB.
+- **Modern web stack**  
+  Built with Next.js, TypeScript, React, Zustand, Dexie, wllama, and Playwright.
+
+## One-line pitch
+
+LoreDenizen turns your browser into a private character AI playground — local models, editable personas, persistent conversations.
+
+## GitHub About (recommended)
+
+Browser-first character AI chat app with local GGUF, OpenRouter, Ollama, editable personas, first-message seeding, and IndexedDB persistence.
+
+## GitHub Topics (recommended)
+
+`local-llm`, `gguf`, `wllama`, `character-ai`, `ai-chat`, `browser-ai`, `ollama`, `openrouter`, `indexeddb`, `nextjs`, `typescript`, `ai-character`, `client-side-ai`
 
 ## Screenshots
 
