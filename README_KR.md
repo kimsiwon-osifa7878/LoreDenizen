@@ -1,21 +1,42 @@
 # LoreDenizen
 
-LoreDenizen은 브라우저에서 GGUF 모델을 기반으로 캐릭터 채팅을 진행할 수 있도록 설계된 프로젝트입니다. 사용자는 캐릭터 설정과 시스템 프롬프트를 자유롭게 조정하고, 대화 기록을 로컬에 유지하면서 자신만의 AI 경험을 만들 수 있습니다.
+**내 브라우저에서 돌리는 나만의 AI 캐릭터.**
 
-## 프로젝트 의의
+LoreDenizen은 브라우저 기반 캐릭터 AI 채팅 앱입니다.  
+사용자는 로컬 GGUF 모델, OpenRouter, Ollama 중 원하는 모델 공급자를 선택하고, 캐릭터의 시스템 프롬프트와 First Message를 자유롭게 편집하며, 자신만의 AI 캐릭터와 대화를 이어갈 수 있습니다.
 
-- **브라우저 중심 AI 경험**: 모델 사용 흐름을 브라우저 실행 환경에 맞춰 구성했습니다.
-- **캐릭터 중심 대화**: 캐릭터 선택 후 대화를 시작하며, `First Message`를 즉시 보여줘 몰입감을 높입니다.
-- **다중 모델 공급자 지원**: 로컬 GGUF, OpenRouter, Ollama를 같은 UI에서 다룹니다.
-- **로컬 데이터 지속성**: 대화/메시지/캐릭터/설정을 IndexedDB에 저장합니다.
+LoreDenizen이 지향하는 것은 단순한 챗봇 UI가 아닙니다.  
+이 프로젝트는 캐릭터 설정, 모델 선택, 로컬 저장, 프롬프트 편집, 대화 지속성을 하나로 묶어 **“내 브라우저 안에 사는 AI 캐릭터”** 경험을 만듭니다.
 
-## 핵심 기능
+## Why LoreDenizen?
 
-- 새 대화 시작 시 캐릭터 선택 다이얼로그 제공
-- 캐릭터 선택 직후 `First Message` 자동 표시
-- 앱 언어 설정(영어/한국어)에 맞춘 응답 언어 지시를 시스템 프롬프트 끝에 자동 추가
-- OpenRouter 모델 선택 시 API key 유효성 검증
-- 세션 재시작 시 OpenRouter API key가 없으면 이전 선택 모델 자동 리셋
+대부분의 AI 채팅 서비스는 모델과 데이터가 서비스 제공자 서버에 묶여 있습니다.  
+LoreDenizen은 반대로, 사용자가 모델과 캐릭터 경험을 더 직접적으로 제어할 수 있는 방향을 실험합니다.
+
+## 핵심 강점
+
+- **Browser-first local AI**  
+  GGUF 모델 다운로드와 실행 흐름을 브라우저 환경 중심으로 설계했습니다.
+- **Character-first chat UX**  
+  새 대화는 캐릭터 선택에서 시작되며, 캐릭터의 First Message가 자동 표시됩니다.
+- **Editable persona and system prompts**  
+  캐릭터의 성격, 말투, 세계관, 행동 규칙을 사용자가 직접 편집할 수 있습니다.
+- **Multiple model providers**  
+  로컬 GGUF, OpenRouter, Ollama를 하나의 UI에서 전환해 사용할 수 있습니다.
+- **Persistent client-side memory**  
+  대화, 메시지, 캐릭터, 설정은 브라우저 IndexedDB에 저장됩니다.
+
+## One-line pitch
+
+LoreDenizen turns your browser into a private character AI playground — local models, editable personas, persistent conversations.
+
+## GitHub About (추천)
+
+웹 기반 로컬 LLM 캐릭터 챗 앱 — GGUF, OpenRouter, Ollama를 하나의 UI에서 사용하고, 캐릭터 프롬프트와 대화 기록을 브라우저에 저장합니다.
+
+## GitHub Topics (추천)
+
+`local-llm`, `gguf`, `wllama`, `character-ai`, `ai-chat`, `browser-ai`, `ollama`, `openrouter`, `indexeddb`, `nextjs`, `typescript`, `ai-character`, `client-side-ai`
 
 ## 스크린샷
 

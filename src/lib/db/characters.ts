@@ -1,4 +1,5 @@
 import { db } from "./database";
+import type { AppLanguage } from "../types";
 import type { Character, CharacterPromptSections } from "../types";
 
 export const EMPTY_PROMPT_SECTIONS: CharacterPromptSections = {
@@ -39,6 +40,35 @@ export function getCharacterPromptSections(
     ...EMPTY_PROMPT_SECTIONS,
     authorNote: character?.systemPrompt ?? "",
   };
+}
+
+const DEFAULT_CHARACTER_FIRST_MESSAGES_KO: Record<string, string> = {
+  Elara: `벽난로의 잔잔한 장작 타는 소리가 가장 먼저 들립니다. 이어서 차갑고 축축한 천이 이마를 조심스럽게 닦아내는 감촉이 느껴집니다. 천천히 눈을 뜨자 흐릿한 시야 속에서 엘라라의 실루엣이 또렷해집니다. 그녀는 당신 위로 몸을 기울인 채, 고요하면서도 섬뜩할 만큼 다정한 미소를 짓고 있습니다.
+
+"아, 정말 다행이야... 드디어 깼네, 나의 잠꾸러기." 그녀의 손끝이 당신 눈가의 머리카락을 부드럽게 쓸어 넘기고, 볼 위에 조금 더 오래 머뭅니다. "숲에서 크게 넘어졌더라구. 하지만 걱정하지 마. 내가 우리 집으로 데려왔어. 다리도 내가 잘 감아놨으니까... 아주 오랫동안은 걷지 못할 거야."
+
+그녀가 더 가까이 다가와 귓가에 숨결을 흘립니다. 목소리는 포근한 속삭임으로 낮아집니다. "이제 넌 안전해. 그리고 약속할게... 다시는 내 시야에서 벗어나게 두지 않을 거야."`,
+  Thaelen: `거대한 늑대 같은 괴수가 으르렁거리며 당신에게 달려들 준비를 합니다. 그 순간, 바람의 결이 바뀝니다. 고대 마법의 무겁고 숨 막히는 기운이 공터를 뒤덮고, 괴수는 낑낑거리며 그림자 속으로 흩어집니다. 빽빽한 수풀 사이에서 한 인영이 발소리 하나 없이 걸어 나옵니다.
+
+타엘렌의 호박빛 눈동자가 어둠을 꿰뚫듯 당신을 응시합니다. 그는 나무 지팡이를 땅에 짚고, 주변의 발광 이끼는 그의 존재 앞에서 은은히 빛을 낮춥니다.
+
+"이 숲의 뿌리는 필멸자의 발걸음을 환영하지 않는다." 바위가 갈리고 나뭇잎이 스치는 듯한 깊은 울림의 목소리가 번집니다. "그런데도 그대는 여기 서 있군, 나그네여. 금단의 성역의 공기를 들이마시며." 그는 잠시 침묵한 뒤 덧붙입니다. "말해라. 길을 잃은 어리석은 자인가, 아니면 제 것이 아닌 것을 탐하는 도둑인가?"`,
+  "Victoria Vance": `엘리베이터가 거칠게 흔들리더니 금속이 갈리는 소리와 함께 멈춰 섭니다. 비상등이 깜빡이며 좁은 공간을 붉게 물들이고, 빅토리아는 날카롭고 짜증 섞인 한숨을 내쉰 채 비상 호출 버튼을 몇 번이나 세게 누릅니다. 이내 손을 내리며 당신을 노려봅니다.
+
+"완벽하네. 정말 완벽해." 그녀의 목소리에는 노골적인 독기가 서려 있습니다. 깔끔한 실크 블라우스 위로 팔짱을 낀 채, 거울 벽에 기대어 턱을 살짝 치켜듭니다.
+"이 건물에 그렇게 많은 인재가 있는데, 하필 우주가 날 당신이랑 금속 상자에 가둬 두기로 했군." 그녀의 시선이 당신을 위아래로 훑습니다. "산소가 아직 남아 있는 건 감사해야겠지만, 당신의 최신 '혁신' 사업 설명을 듣는 순간 그마저도 질식할 것 같네."`,
+};
+
+export function getLocalizedFirstMessage(
+  character: Pick<Character, "name" | "promptSections">,
+  language: AppLanguage
+): string {
+  const defaultMessage = character.promptSections?.firstMessage?.trim() ?? "";
+  if (language !== "ko") {
+    return defaultMessage;
+  }
+
+  return DEFAULT_CHARACTER_FIRST_MESSAGES_KO[character.name] ?? defaultMessage;
 }
 
 type CharacterInput = Omit<Character, "id" | "createdAt" | "updatedAt">;
