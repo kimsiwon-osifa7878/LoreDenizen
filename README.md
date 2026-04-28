@@ -47,17 +47,6 @@ Browser-first character AI chat app with local GGUF, OpenRouter, Ollama, editabl
 
 `local-llm`, `gguf`, `wllama`, `character-ai`, `ai-chat`, `browser-ai`, `ollama`, `openrouter`, `indexeddb`, `nextjs`, `typescript`, `ai-character`, `client-side-ai`
 
-## Screenshots
-
-### Character picker
-![Character picker dialog](docs/screenshots/character-picker-dialog.png)
-
-### First Message appears immediately after character selection
-![First message seeded](docs/screenshots/first-message-seeded.png)
-
-### OpenRouter invalid API key handling
-![OpenRouter invalid key state](docs/screenshots/openrouter-invalid-key.png)
-
 ## Getting started
 
 ### 1) Install dependencies

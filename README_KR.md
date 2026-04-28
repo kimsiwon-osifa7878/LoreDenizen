@@ -38,17 +38,6 @@ LoreDenizen turns your browser into a private character AI playground — local 
 
 `local-llm`, `gguf`, `wllama`, `character-ai`, `ai-chat`, `browser-ai`, `ollama`, `openrouter`, `indexeddb`, `nextjs`, `typescript`, `ai-character`, `client-side-ai`
 
-## 스크린샷
-
-### 캐릭터 선택 다이얼로그
-![캐릭터 선택 다이얼로그](docs/screenshots/character-picker-dialog.png)
-
-### 캐릭터 선택 후 First Message 표시
-![First Message 표시](docs/screenshots/first-message-seeded.png)
-
-### OpenRouter 잘못된 API key 처리
-![OpenRouter 잘못된 key 처리](docs/screenshots/openrouter-invalid-key.png)
-
 ## 시작하기
 
 ### 1) 의존성 설치
