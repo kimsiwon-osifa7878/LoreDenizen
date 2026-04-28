@@ -1,8 +1,27 @@
 import { NextResponse } from "next/server";
 import { normalizeOllamaUrl } from "@/lib/ollama/url";
 
+const OLLAMA_REQUEST_TIMEOUT_MS = 15_000;
+
 interface OllamaTagsPayload {
   url?: string;
+}
+
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), OLLAMA_REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export async function POST(request: Request) {
@@ -20,14 +39,18 @@ export async function POST(request: Request) {
 
   let response: Response;
   try {
-    response = await fetch(`${normalizedUrl}/api/tags`, {
+    response = await fetchWithTimeout(`${normalizedUrl}/api/tags`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return NextResponse.json({ error: "OLLAMA_TIMEOUT" }, { status: 504 });
+    }
+
     return NextResponse.json(
-      { error: "OLLAMA_UNREACHABLE" },
+      { error: "OLLAMA_UNREACHABLE_FROM_SERVER" },
       { status: 502 }
     );
   }
