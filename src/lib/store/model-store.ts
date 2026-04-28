@@ -19,6 +19,11 @@ interface OpenRouterListResponse {
   hasMore?: boolean;
 }
 
+interface OpenRouterValidateResponse {
+  valid?: boolean;
+  error?: string;
+}
+
 interface ModelState {
   models: DownloadedModel[];
   activeModelId: string | null;
@@ -111,7 +116,9 @@ export const useModelStore = create<ModelState>((set, get) => ({
     });
 
     if (settings.activeProvider === "openrouter" && settings.openRouterModel) {
-      llmEngine.configureOpenRouter(settings.openRouterModel);
+      if (llmEngine.hasOpenRouterSessionApiKey()) {
+        llmEngine.configureOpenRouter(settings.openRouterModel);
+      }
     }
 
     if (
@@ -133,6 +140,23 @@ export const useModelStore = create<ModelState>((set, get) => ({
       set({
         openRouterHasEnvApiKey: Boolean(data.hasApiKey),
       });
+
+      const settings = await getSettings();
+      if (
+        settings.activeProvider === "openrouter" &&
+        settings.openRouterModel &&
+        !data.hasApiKey &&
+        !llmEngine.hasOpenRouterSessionApiKey()
+      ) {
+        await updateSettings({
+          activeProvider: null,
+          activeModelId: null,
+          openRouterModel: null,
+        });
+        set({ activeModelId: null, activeProvider: null });
+      } else if (settings.activeProvider === "openrouter" && settings.openRouterModel) {
+        llmEngine.configureOpenRouter(settings.openRouterModel);
+      }
 
       await get().searchOpenRouterModels();
     } catch {
@@ -229,6 +253,20 @@ export const useModelStore = create<ModelState>((set, get) => ({
   },
 
   connectOpenRouter: async (model, sessionApiKey) => {
+    const validationResponse = await fetch("/api/openrouter/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        apiKey: sessionApiKey,
+      }),
+    });
+    const validationPayload =
+      (await validationResponse.json()) as OpenRouterValidateResponse;
+    if (!validationResponse.ok || !validationPayload.valid) {
+      throw new Error(validationPayload.error || "OPENROUTER_API_KEY_INVALID");
+    }
+
     llmEngine.setOpenRouterSessionApiKey(sessionApiKey);
     llmEngine.configureOpenRouter(model);
     const modelId = `openrouter::${model}`;

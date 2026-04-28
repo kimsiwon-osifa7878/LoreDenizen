@@ -1,39 +1,79 @@
 # LoreDenizen
 
-Browser-based GGUF chat app that downloads models from Hugging Face and runs them locally.
+**Your own AI characters, running from your browser.**
 
-## Development
+LoreDenizen is a browser-first character AI chat app for people who want more control over their AI companions, roleplay characters, assistants, and prompt-driven personas.
 
-1. Prepare `.env.local` based on `.env.example`.
-2. Put preset repository paths in `HF_MODELS` as a JSON string array.
-3. Start the app.
+Instead of locking the experience behind a single hosted model, LoreDenizen lets you choose your runtime:
+
+- run local GGUF models in the browser,
+- connect to OpenRouter,
+- or use your own Ollama server.
+
+Characters are not just names in a dropdown.  
+Each character can carry its own system prompt, structured persona, language behavior, and seeded first message, so every new conversation starts inside a living world.
+
+## Why LoreDenizen?
+
+Most AI chat apps focus on the model.  
+LoreDenizen focuses on the character experience around the model.
+
+It gives users a place to create, edit, select, and talk to AI characters while keeping conversations, messages, characters, and settings persisted in browser storage.
+
+## Highlights
+
+- **Browser-first local AI**  
+  Designed around browser-based model download, caching, and inference.
+- **Character-first conversations**  
+  Start every chat by choosing a character. The character’s First Message appears automatically.
+- **Editable personas and system prompts**  
+  Freely shape personality, tone, lore, behavior rules, and language style.
+- **Multiple model providers**  
+  Use local GGUF, OpenRouter, or Ollama from a unified model manager.
+- **Persistent client-side data**  
+  Conversations, messages, characters, downloaded model metadata, and settings are stored with IndexedDB.
+- **Modern web stack**  
+  Built with Next.js, TypeScript, React, Zustand, Dexie, wllama, and Playwright.
+
+## One-line pitch
+
+LoreDenizen turns your browser into a private character AI playground — local models, editable personas, persistent conversations.
+
+## GitHub About (recommended)
+
+Browser-first character AI chat app with local GGUF, OpenRouter, Ollama, editable personas, first-message seeding, and IndexedDB persistence.
+
+## GitHub Topics (recommended)
+
+`local-llm`, `gguf`, `wllama`, `character-ai`, `ai-chat`, `browser-ai`, `ollama`, `openrouter`, `indexeddb`, `nextjs`, `typescript`, `ai-character`, `client-side-ai`
+
+## Screenshots
+
+### Character picker
+![Character picker dialog](docs/screenshots/character-picker-dialog.png)
+
+### First Message appears immediately after character selection
+![First message seeded](docs/screenshots/first-message-seeded.png)
+
+### OpenRouter invalid API key handling
+![OpenRouter invalid key state](docs/screenshots/openrouter-invalid-key.png)
+
+## Getting started
+
+### 1) Install dependencies
 
 ```bash
-pnpm dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+### 2) Optional environment setup
 
-## E2E test (Playwright)
+Create `.env.local` and configure as needed:
 
-```bash
-# install Chromium for Playwright
-pnpm test:e2e:install
+- `HF_MODELS`: JSON array of Hugging Face repos (GGUF).
+- `OPENROUTER_API_KEY`: optional server API key for OpenRouter.
 
-# run E2E tests
-pnpm test:e2e
-```
-
-If your environment blocks Playwright browser downloads, set an already-installed
-Chromium path and run tests with:
-
-```bash
-PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium pnpm test:e2e
-```
-
-## Environment variables
-
-`HF_MODELS` example:
+Example:
 
 ```json
 [
@@ -43,26 +83,40 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium pnpm test:e2e
 ]
 ```
 
+### 3) Run dev server
 
-Additional variables:
+```bash
+pnpm dev
+```
 
-- `OPENROUTER_API_KEY`: server-side OpenRouter API key (optional; if empty, UI asks for one-time session key).
-- `ollamaUrl` defaults to `http://localhost:11434` in app settings and can be changed by user.
+Open `http://localhost:3000`.
 
-- Local development: `.env.local`
-- Production or Vercel: `.env` or server environment variables
+## Usage flow
 
-The UI now works in repo-first mode:
+1. Open **New chat** and select a character.
+2. Confirm the character's **First Message** appears automatically.
+3. Open **Settings** and choose a model provider:
+   - Local GGUF: download/select from model tabs.
+   - OpenRouter: select a model and provide a valid API key if needed.
+   - Ollama: connect URL and choose a discovered model.
+4. Start chatting; app state and history persist in browser storage.
 
-- preset repos come from `HF_MODELS`
-- users can also enter an exact `owner/name` repo manually
-- the app loads GGUF files from that repo and lets the user download a specific file
-- global Hugging Face search remains controlled by `ENABLE_HF_MODEL_SEARCH`
+## Testing
 
-## 진행상황
+Install Playwright browser:
 
-- Phase 1은 대부분 완료됨: Next.js App Router, TypeScript strict, Tailwind 4, wllama/Dexie/Zustand 설치, COOP/COEP 헤더, WASM 복사, `npm run build` 성공.
-- 정리 필요 사항: 현재 셸에서 `pnpm`이 인식되지 않아 `pnpm build`는 미확인, `package-lock.json`과 `pnpm-lock.yaml` 공존, 일부 한국어 주석 인코딩 깨짐.
-- 현재 코드는 Phase 2 일부와 Phase 3 일부까지 이미 진행됨.
-- 다음 우선순위: Phase 1 마감 정리 후 Phase 2 DB 레이어 검증 및 보강.
-- OpenRouter 모델 연결 UX 개선: OpenRouter 모델 API를 기반으로 텍스트 전용 모델을 검색/정렬/무한 스크롤(최대 100개)로 선택할 수 있도록 변경했고, 모델별 input/output 비용, context 길이, release date를 표시하도록 업데이트함.
+```bash
+pnpm test:e2e:install
+```
+
+Run E2E tests:
+
+```bash
+pnpm test:e2e
+```
+
+Run production build check:
+
+```bash
+pnpm build
+```

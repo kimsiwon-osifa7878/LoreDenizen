@@ -36,6 +36,10 @@ class LLMEngine {
     this.openRouterApiKey = apiKey?.trim() || null;
   }
 
+  hasOpenRouterSessionApiKey(): boolean {
+    return Boolean(this.openRouterApiKey);
+  }
+
   setOllamaUrl(url: string): void {
     this.ollamaUrl = url;
   }

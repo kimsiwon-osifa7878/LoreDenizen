@@ -95,10 +95,15 @@ export async function GET(request: Request) {
   const limit = Math.min(MAX_LIMIT, Math.max(1, Number(searchParams.get("limit") ?? DEFAULT_LIMIT) || DEFAULT_LIMIT));
   const sort = parseSort(searchParams.get("sort"));
 
-  const response = await fetch("https://openrouter.ai/api/v1/models", {
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+    });
+  } catch {
+    return NextResponse.json({ items: [], total: 0, hasMore: false });
+  }
 
   if (!response.ok) {
     return NextResponse.json({ error: "OpenRouter 모델 목록을 불러오지 못했습니다." }, { status: response.status });

@@ -6,7 +6,11 @@ import {
   getAllConversations,
   updateConversation,
 } from "../db/conversations";
-import { getAllCharacters, getCharacter } from "../db/characters";
+import {
+  getAllCharacters,
+  getCharacter,
+  getLocalizedFirstMessage,
+} from "../db/characters";
 import { addMessage, getMessagesByConversation } from "../db/messages";
 import { getSettings } from "../db/settings";
 import { llmEngine } from "../llm/engine";
@@ -99,6 +103,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
       characterId: charId,
       modelId,
     });
+    const selectedCharacter = await getCharacter(charId);
+    const firstMessage = selectedCharacter
+      ? getLocalizedFirstMessage(selectedCharacter, language)
+      : "";
+
+    if (firstMessage) {
+      await addMessage({
+        conversationId: conversation.id,
+        role: "assistant",
+        content: firstMessage,
+      });
+    }
 
     await get().loadConversations();
     await get().setActiveConversation(conversation.id);
@@ -114,6 +130,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendMessage: async (content) => {
+    const language = useSettingsStore.getState().language;
     let conversationId = get().activeConversationId;
 
     if (!conversationId) {
@@ -134,7 +151,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     if (!llmEngine.isModelLoaded()) {
-      const language = useSettingsStore.getState().language;
       const errorMessage = await addMessage({
         conversationId,
         role: "assistant",
@@ -150,8 +166,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const allMessages: Array<{ role: string; content: string }> = [];
       const language = useSettingsStore.getState().language;
       const character = get().activeCharacter;
+      const languageInstruction =
+        language === "ko"
+          ? "모든 답변은 반드시 한국어로만 작성하세요."
+          : "All responses must be written in English.";
       if (character) {
-        allMessages.push({ role: "system", content: character.systemPrompt });
+        allMessages.push({
+          role: "system",
+          content: `${character.systemPrompt}\n\n${languageInstruction}`,
+        });
+      } else {
+        allMessages.push({
+          role: "system",
+          content: languageInstruction,
+        });
       }
       allMessages.push({
         role: "system",
