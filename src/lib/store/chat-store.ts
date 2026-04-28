@@ -6,7 +6,11 @@ import {
   getAllConversations,
   updateConversation,
 } from "../db/conversations";
-import { getAllCharacters, getCharacter } from "../db/characters";
+import {
+  getAllCharacters,
+  getCharacter,
+  getLocalizedFirstMessage,
+} from "../db/characters";
 import { addMessage, getMessagesByConversation } from "../db/messages";
 import { getSettings } from "../db/settings";
 import { llmEngine } from "../llm/engine";
@@ -92,8 +96,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       modelId,
     });
     const selectedCharacter = await getCharacter(charId);
-    const firstMessage =
-      selectedCharacter?.promptSections?.firstMessage?.trim() ?? "";
+    const firstMessage = selectedCharacter
+      ? getLocalizedFirstMessage(selectedCharacter, language)
+      : "";
 
     if (firstMessage) {
       await addMessage({
