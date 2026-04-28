@@ -91,6 +91,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
       characterId: charId,
       modelId,
     });
+    const selectedCharacter = await getCharacter(charId);
+    const firstMessage =
+      selectedCharacter?.promptSections?.firstMessage?.trim() ?? "";
+
+    if (firstMessage) {
+      await addMessage({
+        conversationId: conversation.id,
+        role: "assistant",
+        content: firstMessage,
+      });
+    }
 
     await get().loadConversations();
     await get().setActiveConversation(conversation.id);
@@ -106,6 +117,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   sendMessage: async (content) => {
+    const language = useSettingsStore.getState().language;
     let conversationId = get().activeConversationId;
 
     if (!conversationId) {
@@ -126,7 +138,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     if (!llmEngine.isModelLoaded()) {
-      const language = useSettingsStore.getState().language;
       const errorMessage = await addMessage({
         conversationId,
         role: "assistant",
@@ -141,8 +152,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const allMessages: Array<{ role: string; content: string }> = [];
       const character = get().activeCharacter;
+      const languageInstruction =
+        language === "ko"
+          ? "모든 답변은 반드시 한국어로만 작성하세요."
+          : "All responses must be written in English.";
       if (character) {
-        allMessages.push({ role: "system", content: character.systemPrompt });
+        allMessages.push({
+          role: "system",
+          content: `${character.systemPrompt}\n\n${languageInstruction}`,
+        });
+      } else {
+        allMessages.push({
+          role: "system",
+          content: languageInstruction,
+        });
       }
       for (const message of get().messages) {
         if (message.role !== "system") {

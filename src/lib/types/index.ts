@@ -63,10 +63,30 @@ export interface HfRepoFile {
 
 export type ModelCompatibility = "supported" | "unsupported" | "unknown";
 export type AppLanguage = "en" | "ko";
+export type ModelProvider = "local" | "openrouter" | "ollama";
+export type OpenRouterSort =
+  | "created_desc"
+  | "context_desc"
+  | "pricing_prompt_asc"
+  | "pricing_completion_asc"
+  | "name_asc";
+
+export interface OpenRouterModelItem {
+  id: string;
+  name: string;
+  contextLength: number | null;
+  promptPrice: number | null;
+  completionPrice: number | null;
+  created: number | null;
+}
 
 export interface AppSettings {
   id: "global";
   activeModelId: string | null;
+  activeProvider: ModelProvider | null;
+  openRouterModel: string | null;
+  ollamaUrl: string;
+  ollamaModel: string | null;
   defaultCharacterId: string | null;
   theme: "light" | "dark" | "system";
   language: AppLanguage;

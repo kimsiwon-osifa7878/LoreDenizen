@@ -18,6 +18,7 @@ export default function Home() {
   const loadUiSettings = useSettingsStore((s) => s.loadSettings);
   const language = useSettingsStore((s) => s.language);
   const loadModels = useModelStore((s) => s.loadModels);
+  const loadRemoteConfigs = useModelStore((s) => s.loadRemoteConfigs);
 
   useEffect(() => {
     async function init() {
@@ -28,6 +29,7 @@ export default function Home() {
         loadSettings(),
         loadUiSettings(),
         loadModels(),
+        loadRemoteConfigs(),
       ]);
     }
     init();

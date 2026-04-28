@@ -1,6 +1,7 @@
 "use client";
 
 import { Wllama } from "@wllama/wllama";
+import type { ModelProvider } from "../types";
 
 const CONFIG_PATHS = {
   "single-thread/wllama.wasm": "/wasm/single-thread/wllama.wasm",
@@ -20,12 +21,27 @@ function stripThinkBlocks(text: string): string {
 class LLMEngine {
   private wllama: Wllama | null = null;
   private currentModelId: string | null = null;
+  private currentProvider: ModelProvider | null = null;
+  private openRouterApiKey: string | null = null;
+  private ollamaUrl = "http://localhost:11434";
   private isLoading = false;
   private abortController: AbortController | null = null;
 
   async initialize(): Promise<void> {
     if (this.wllama) return;
     this.wllama = new Wllama(CONFIG_PATHS);
+  }
+
+  setOpenRouterSessionApiKey(apiKey: string | null): void {
+    this.openRouterApiKey = apiKey?.trim() || null;
+  }
+
+  hasOpenRouterSessionApiKey(): boolean {
+    return Boolean(this.openRouterApiKey);
+  }
+
+  setOllamaUrl(url: string): void {
+    this.ollamaUrl = url;
   }
 
   async downloadModel(
@@ -44,7 +60,6 @@ class LLMEngine {
     if (this.isLoading) throw new Error("모델 로딩 중");
     this.isLoading = true;
     try {
-      // 기존 모델 언로드
       if (this.wllama) {
         await this.wllama.exit();
         this.wllama = null;
@@ -53,10 +68,22 @@ class LLMEngine {
       await this.wllama!.loadModelFromHF(hfRepo, fileName, {
         n_ctx: 2048,
       });
+      this.currentProvider = "local";
       this.currentModelId = `${hfRepo}::${fileName}`;
     } finally {
       this.isLoading = false;
     }
+  }
+
+  configureOpenRouter(model: string): void {
+    this.currentProvider = "openrouter";
+    this.currentModelId = `openrouter::${model}`;
+  }
+
+  configureOllama(model: string, url: string): void {
+    this.currentProvider = "ollama";
+    this.ollamaUrl = url;
+    this.currentModelId = `ollama::${model}`;
   }
 
   async generateCompletion(
@@ -70,6 +97,14 @@ class LLMEngine {
     },
     onToken: (token: string, currentText: string) => void
   ): Promise<string> {
+    if (this.currentProvider === "openrouter") {
+      return this.generateWithOpenRouter(messages, params, onToken);
+    }
+
+    if (this.currentProvider === "ollama") {
+      return this.generateWithOllama(messages, params, onToken);
+    }
+
     if (!this.wllama) throw new Error("모델이 로드되지 않음");
 
     this.abortController = new AbortController();
@@ -97,6 +132,84 @@ class LLMEngine {
     return stripThinkBlocks(result);
   }
 
+  private async generateWithOpenRouter(
+    messages: Array<{ role: string; content: string }>,
+    params: { temperature: number; topP: number; maxTokens: number },
+    onToken: (token: string, currentText: string) => void
+  ): Promise<string> {
+    if (!this.currentModelId) {
+      throw new Error("OpenRouter 모델이 선택되지 않음");
+    }
+
+    const model = this.currentModelId.replace("openrouter::", "");
+    const response = await fetch("/api/openrouter/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        apiKey: this.openRouterApiKey,
+        messages: this.withNoThinkInstruction(messages),
+        params,
+      }),
+    });
+
+    const payload = (await response.json()) as { content?: string; error?: string };
+    if (!response.ok || !payload.content) {
+      throw new Error(payload.error || "OpenRouter 요청 실패");
+    }
+
+    const visibleText = stripThinkBlocks(payload.content);
+    onToken(visibleText, visibleText);
+    return visibleText;
+  }
+
+  private async generateWithOllama(
+    messages: Array<{ role: string; content: string }>,
+    params: {
+      temperature: number;
+      topP: number;
+      topK: number;
+      repeatPenalty: number;
+      maxTokens: number;
+    },
+    onToken: (token: string, currentText: string) => void
+  ): Promise<string> {
+    if (!this.currentModelId) {
+      throw new Error("Ollama 모델이 선택되지 않음");
+    }
+
+    const model = this.currentModelId.replace("ollama::", "");
+    const response = await fetch(`${this.ollamaUrl}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages: this.withNoThinkInstruction(messages),
+        stream: false,
+        options: {
+          temperature: params.temperature,
+          top_p: params.topP,
+          top_k: params.topK,
+          repeat_penalty: params.repeatPenalty,
+          num_predict: params.maxTokens,
+        },
+      }),
+    });
+
+    const payload = (await response.json()) as {
+      message?: { content?: string };
+      error?: string;
+    };
+
+    if (!response.ok || !payload.message?.content) {
+      throw new Error(payload.error || "Ollama 요청 실패");
+    }
+
+    const visibleText = stripThinkBlocks(payload.message.content);
+    onToken(visibleText, visibleText);
+    return visibleText;
+  }
+
   stopGeneration(): void {
     this.abortController?.abort();
   }
@@ -104,7 +217,6 @@ class LLMEngine {
   private formatMessages(
     messages: Array<{ role: string; content: string }>
   ): string {
-    // ChatML 포맷
     return (
       messages
         .map((m) => {
@@ -148,8 +260,9 @@ class LLMEngine {
     if (this.wllama) {
       await this.wllama.exit();
       this.wllama = null;
-      this.currentModelId = null;
     }
+    this.currentModelId = null;
+    this.currentProvider = null;
   }
 
   isModelLoaded(): boolean {
@@ -158,6 +271,10 @@ class LLMEngine {
 
   getCurrentModelId(): string | null {
     return this.currentModelId;
+  }
+
+  getCurrentProvider(): ModelProvider | null {
+    return this.currentProvider;
   }
 
   getIsLoading(): boolean {

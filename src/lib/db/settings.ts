@@ -5,6 +5,10 @@ import { DEFAULT_INFERENCE_PARAMS } from "../types";
 const DEFAULT_SETTINGS: AppSettings = {
   id: "global",
   activeModelId: null,
+  activeProvider: null,
+  openRouterModel: null,
+  ollamaUrl: "http://localhost:11434",
+  ollamaModel: null,
   defaultCharacterId: null,
   theme: "system",
   language: "en",
@@ -28,8 +32,12 @@ export async function getSettings(): Promise<AppSettings> {
     },
   };
 
-  if (!settings.language) {
-    await db.settings.update("global", { language: DEFAULT_SETTINGS.language });
+  if (
+    !settings.language ||
+    !settings.ollamaUrl ||
+    settings.activeProvider === undefined
+  ) {
+    await db.settings.put(normalizedSettings);
   }
 
   return normalizedSettings;
