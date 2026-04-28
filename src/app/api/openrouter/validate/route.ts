@@ -21,25 +21,59 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = await fetch("https://openrouter.ai/api/v1/models", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    cache: "no-store",
-  });
+  let keyResponse: Response;
+  try {
+    keyResponse = await fetch("https://openrouter.ai/api/v1/key", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return NextResponse.json(
+      { valid: false, error: "OpenRouter API key validation failed." },
+      { status: 502 }
+    );
+  }
 
-  if (!response.ok) {
-    const errorText = await response.text();
+  if (!keyResponse.ok) {
+    const errorText = await keyResponse.text();
     return NextResponse.json(
       {
         valid: false,
         error: errorText || "OpenRouter API key validation failed.",
       },
-      { status: response.status }
+      { status: keyResponse.status }
     );
   }
 
-  const payload = (await response.json()) as {
+  let modelsResponse: Response;
+  try {
+    modelsResponse = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return NextResponse.json(
+      { valid: false, error: "OpenRouter 모델 목록을 불러오지 못했습니다." },
+      { status: 502 }
+    );
+  }
+
+  if (!modelsResponse.ok) {
+    const errorText = await modelsResponse.text();
+    return NextResponse.json(
+      {
+        valid: false,
+        error: errorText || "OpenRouter API key validation failed.",
+      },
+      { status: modelsResponse.status }
+    );
+  }
+
+  const payload = (await modelsResponse.json()) as {
     data?: Array<{ id?: string }>;
   };
 
