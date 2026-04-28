@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { normalizeOllamaUrl } from "@/lib/ollama/url";
 
-const OLLAMA_REQUEST_TIMEOUT_MS = 30_000;
-const DEFAULT_OLLAMA_NUM_CTX = 4096;
+const OLLAMA_REQUEST_TIMEOUT_MS = 120_000;
+const DEFAULT_OLLAMA_NUM_CTX = 8192;
 const MIN_OLLAMA_NUM_CTX = 2048;
-const MAX_OLLAMA_NUM_CTX = 8192;
+const MAX_OLLAMA_NUM_CTX = 32768;
+const OLLAMA_NUM_PREDICT = 4096;
 
 interface OllamaMessage {
   role: "system" | "user" | "assistant";
@@ -155,7 +156,7 @@ export async function POST(request: Request) {
           top_p: body.params?.topP,
           top_k: body.params?.topK,
           repeat_penalty: body.params?.repeatPenalty,
-          num_predict: body.params?.maxTokens,
+          num_predict: OLLAMA_NUM_PREDICT,
           num_ctx: numCtx,
         },
       }),
@@ -175,6 +176,10 @@ export async function POST(request: Request) {
   const payload = (await response.json().catch(() => ({}))) as {
     message?: { content?: string };
     error?: string;
+    done_reason?: string;
+    prompt_eval_count?: number;
+    eval_count?: number;
+    total_duration?: number;
   };
 
   if (!response.ok || !payload.message?.content) {
@@ -186,5 +191,10 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     content: payload.message.content,
+    usedNumCtx: numCtx,
+    doneReason: payload.done_reason ?? null,
+    promptEvalCount: payload.prompt_eval_count ?? null,
+    evalCount: payload.eval_count ?? null,
+    totalDuration: payload.total_duration ?? null,
   });
 }
