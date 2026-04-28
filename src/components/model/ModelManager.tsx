@@ -136,15 +136,8 @@ function MyModels() {
   );
 }
 
-const OPENROUTER_SORT_OPTIONS: Array<{ label: string; value: OpenRouterSort }> = [
-  { label: "최신 등록순", value: "created_desc" },
-  { label: "컨텍스트 긴 순", value: "context_desc" },
-  { label: "입력 비용 낮은 순", value: "pricing_prompt_asc" },
-  { label: "출력 비용 낮은 순", value: "pricing_completion_asc" },
-  { label: "이름순", value: "name_asc" },
-];
-
 function OpenRouterSettings() {
+  const language = useSettingsStore((s) => s.language);
   const activeModelId = useModelStore((s) => s.activeModelId);
   const models = useModelStore((s) => s.openRouterModels);
   const openRouterHasEnvApiKey = useModelStore((s) => s.openRouterHasEnvApiKey);
@@ -159,10 +152,9 @@ function OpenRouterSettings() {
   const connectOpenRouter = useModelStore((s) => s.connectOpenRouter);
 
   const [queryInput, setQueryInput] = useState(storeQuery);
-  const [selectedModel, setSelectedModel] = useState("");
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  const selectedFromActive = useMemo(() => {
+  const selectedFromActiveModel = useMemo(() => {
     if (!activeModelId?.startsWith("openrouter::")) {
       return "";
     }
@@ -197,17 +189,16 @@ function OpenRouterSettings() {
     await searchOpenRouterModels(queryInput);
   }
 
-  async function handleConnect() {
-    const model = selectedModel || selectedFromActive;
+  async function handleSelectModel(model: string) {
     if (!model) {
-      window.alert("연결할 OpenRouter 모델을 먼저 선택해 주세요.");
+      window.alert(t(language, "openRouterSelectModelFirst"));
       return;
     }
 
     let sessionApiKey: string | null = null;
     if (!openRouterHasEnvApiKey) {
       const input = window.prompt(
-        "OpenRouter API key가 .env/.env.local에 없습니다. 지금 입력한 키는 이번 세션에서만 사용되며 저장되지 않습니다."
+        t(language, "openRouterMissingApiKey")
       );
 
       if (!input?.trim()) {
@@ -218,28 +209,36 @@ function OpenRouterSettings() {
     }
 
     await connectOpenRouter(model, sessionApiKey);
-    window.alert(`OpenRouter 연결 완료: ${model}`);
+    window.alert(t(language, "openRouterConnected", { model }));
   }
+
+  const openRouterSortOptions: Array<{ label: string; value: OpenRouterSort }> = [
+    { label: t(language, "openRouterSortCreatedDesc"), value: "created_desc" },
+    { label: t(language, "openRouterSortContextDesc"), value: "context_desc" },
+    { label: t(language, "openRouterSortPromptAsc"), value: "pricing_prompt_asc" },
+    { label: t(language, "openRouterSortCompletionAsc"), value: "pricing_completion_asc" },
+    { label: t(language, "openRouterSortNameAsc"), value: "name_asc" },
+  ];
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border bg-bubble-assistant/40 p-3 text-sm text-muted">
-        OpenRouter는 외부 API 호출 방식이며 사용량에 따라 비용이 발생할 수 있습니다.
+        {t(language, "openRouterCostNotice")}
       </div>
 
       <div className="rounded-lg border border-border p-3">
         <div className="mb-3 flex flex-wrap items-end gap-2">
           <div className="min-w-[240px] flex-1">
-            <label className="mb-1 block text-xs text-muted">검색</label>
+            <label className="mb-1 block text-xs text-muted">{t(language, "search")}</label>
             <input
               value={queryInput}
               onChange={(event) => setQueryInput(event.target.value)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              placeholder="모델 이름 검색"
+              placeholder={t(language, "openRouterModelSearchPlaceholder")}
             />
           </div>
           <div className="min-w-[180px]">
-            <label className="mb-1 block text-xs text-muted">Sort</label>
+            <label className="mb-1 block text-xs text-muted">{t(language, "sort")}</label>
             <select
               value={storeSort}
               onChange={(event) => {
@@ -247,7 +246,7 @@ function OpenRouterSettings() {
               }}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
             >
-              {OPENROUTER_SORT_OPTIONS.map((option) => (
+              {openRouterSortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -261,73 +260,79 @@ function OpenRouterSettings() {
             }}
             className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover"
           >
-            검색
+            {t(language, "search")}
           </button>
         </div>
 
         <div className="h-[360px] overflow-y-auto rounded-lg border border-border">
           {models.length === 0 && !isLoading ? (
-            <p className="p-4 text-sm text-muted">검색 결과가 없습니다.</p>
+            <p className="p-4 text-sm text-muted">{t(language, "openRouterNoResults")}</p>
           ) : (
             <div className="divide-y divide-border">
               {models.map((model) => {
-                const isSelected = (selectedModel || selectedFromActive) === model.id;
+                const isSelected = selectedFromActiveModel === model.id;
 
                 return (
-                  <button
+                  <div
                     key={model.id}
-                    type="button"
-                    onClick={() => setSelectedModel(model.id)}
                     className={`w-full p-3 text-left transition-colors ${
-                      isSelected ? "bg-accent/10" : "hover:bg-bubble-assistant/40"
+                      isSelected
+                        ? "bg-accent/10"
+                        : "hover:bg-bubble-assistant/40"
                     }`}
                   >
-                    <p className="text-sm font-medium">{model.id}</p>
-                    <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted sm:grid-cols-4">
-                      <span>Input: {formatPrice(model.promptPrice)}</span>
-                      <span>Output: {formatPrice(model.completionPrice)}</span>
-                      <span>Context: {formatContext(model.contextLength)}</span>
-                      <span>Release: {formatDate(model.created)}</span>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{model.id}</p>
+                        <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted sm:grid-cols-4">
+                          <span>{t(language, "openRouterInputPrice")}: {formatPricePerMillion(model.promptPrice)}</span>
+                          <span>{t(language, "openRouterOutputPrice")}: {formatPricePerMillion(model.completionPrice)}</span>
+                          <span>{t(language, "openRouterContext")}: {formatContext(model.contextLength)}</span>
+                          <span>{t(language, "openRouterRelease")}: {formatDate(model.created)}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleSelectModel(model.id);
+                        }}
+                        className="rounded-md border border-accent px-2 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent/10"
+                      >
+                        {isSelected ? t(language, "selected") : t(language, "openRouterSelect")}
+                      </button>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
               <div ref={sentinelRef} className="h-4" />
             </div>
           )}
 
-          {isLoading && <p className="p-3 text-center text-xs text-muted">불러오는 중...</p>}
+          {isLoading && (
+            <p className="p-3 text-center text-xs text-muted">{t(language, "openRouterLoading")}</p>
+          )}
           {!hasMore && models.length > 0 && (
-            <p className="p-3 text-center text-xs text-muted">최대 100개 모델을 표시했습니다.</p>
+            <p className="p-3 text-center text-xs text-muted">{t(language, "openRouterMaxShown")}</p>
           )}
         </div>
       </div>
 
       {!openRouterHasEnvApiKey && (
         <p className="text-xs text-amber-600">
-          서버 환경변수 API key가 없습니다. Connect 시 세션용 API key를 입력받습니다.
+          {t(language, "openRouterEnvMissingHint")}
         </p>
       )}
-
-      <button
-        type="button"
-        onClick={() => {
-          void handleConnect();
-        }}
-        className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover"
-      >
-        Connect OpenRouter
-      </button>
     </div>
   );
 }
 
-function formatPrice(value: number | null): string {
+function formatPricePerMillion(value: number | null): string {
   if (value === null) {
     return "-";
   }
 
-  return `$${value.toFixed(6)}/tok`;
+  const perMillion = value * 1_000_000;
+  return `$${perMillion.toFixed(2)}/1M tokens`;
 }
 
 function formatContext(value: number | null): string {
@@ -347,6 +352,7 @@ function formatDate(value: number | null): string {
 }
 
 function OllamaSettings() {
+  const language = useSettingsStore((s) => s.language);
   const [urlInput, setUrlInput] = useState(useModelStore.getState().ollamaUrl);
   const ollamaUrl = useModelStore((s) => s.ollamaUrl);
   const ollamaModels = useModelStore((s) => s.ollamaModels);
@@ -362,7 +368,7 @@ function OllamaSettings() {
     try {
       await connectOllama(urlInput || ollamaUrl);
     } catch {
-      window.alert("해당 URL에 Ollama 서버가 없습니다.");
+      window.alert(t(language, "ollamaNoServer"));
     }
   }
 
@@ -372,17 +378,17 @@ function OllamaSettings() {
     }
 
     await selectOllamaModel(model);
-    window.alert(`Ollama 연결 완료: ${model}`);
+    window.alert(t(language, "ollamaConnected", { model }));
   }
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-border bg-bubble-assistant/40 p-3 text-sm text-muted">
-        Ollama는 별도 서버 실행이 필요합니다. 로컬/원격 Ollama 인스턴스 URL로 연결합니다.
+        {t(language, "ollamaConnectHint")}
       </div>
 
       <div className="rounded-lg border border-border p-3">
-        <label className="mb-2 block text-sm font-medium">Ollama URL</label>
+        <label className="mb-2 block text-sm font-medium">{t(language, "ollamaUrl")}</label>
         <div className="flex gap-2">
           <input
             value={urlInput}
@@ -397,15 +403,15 @@ function OllamaSettings() {
             }}
             className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover"
           >
-            Connect
+            {t(language, "connect")}
           </button>
         </div>
       </div>
 
       <div className="rounded-lg border border-border p-3">
-        <p className="mb-2 text-sm font-medium">모델 선택</p>
+        <p className="mb-2 text-sm font-medium">{t(language, "ollamaSelectModel")}</p>
         {ollamaModels.length === 0 ? (
-          <p className="text-xs text-muted">Connect를 눌러 모델 목록을 불러오세요.</p>
+          <p className="text-xs text-muted">{t(language, "ollamaLoadModelsHint")}</p>
         ) : (
           <select
             value={selectedModel}
@@ -414,7 +420,7 @@ function OllamaSettings() {
             }}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
           >
-            <option value="">모델을 선택하세요</option>
+            <option value="">{t(language, "selectModelPlaceholder")}</option>
             {ollamaModels.map((model) => (
               <option key={model} value={model}>
                 {model}

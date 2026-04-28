@@ -14,6 +14,14 @@ import { useSettingsStore } from "./settings-store";
 import type { Character, Conversation, InferenceParams, Message } from "../types";
 import { DEFAULT_INFERENCE_PARAMS } from "../types";
 
+function getLanguageResponseInstruction(language: "en" | "ko"): string {
+  if (language === "ko") {
+    return "최종 답변은 반드시 한국어로 작성하세요.";
+  }
+
+  return "The final response must be written in English.";
+}
+
 interface ChatState {
   conversations: Conversation[];
   activeConversationId: string | null;
@@ -140,10 +148,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       const allMessages: Array<{ role: string; content: string }> = [];
+      const language = useSettingsStore.getState().language;
       const character = get().activeCharacter;
       if (character) {
         allMessages.push({ role: "system", content: character.systemPrompt });
       }
+      allMessages.push({
+        role: "system",
+        content: getLanguageResponseInstruction(language),
+      });
       for (const message of get().messages) {
         if (message.role !== "system") {
           allMessages.push({ role: message.role, content: message.content });
