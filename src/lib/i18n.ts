@@ -108,8 +108,6 @@ const translations = {
     openRouterRelease: "Release",
     openRouterSelectModelFirst: "Select an OpenRouter model first.",
     openRouterConnected: "OpenRouter connected: {model}",
-    openRouterInvalidApiKey:
-      "OpenRouter model was not selected. Check your API key and try again.",
     openRouterMissingApiKey:
       "OpenRouter API key is missing in .env/.env.local. The key entered now is used only for this session and is not saved.",
     openRouterEnvMissingHint:
@@ -238,8 +236,6 @@ const translations = {
     openRouterRelease: "출시일",
     openRouterSelectModelFirst: "OpenRouter 모델을 먼저 선택해 주세요.",
     openRouterConnected: "OpenRouter 연결 완료: {model}",
-    openRouterInvalidApiKey:
-      "OpenRouter 모델이 선택되지 않았습니다. API key를 확인한 뒤 다시 시도해 주세요.",
     openRouterMissingApiKey:
       "OpenRouter API key가 .env/.env.local에 없습니다. 지금 입력한 키는 이번 세션에서만 사용되며 저장되지 않습니다.",
     openRouterEnvMissingHint:
