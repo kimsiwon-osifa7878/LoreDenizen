@@ -150,7 +150,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model,
         messages: body.messages,
-        stream: false,
+        stream: true,
         options: {
           temperature: body.params?.temperature,
           top_p: body.params?.topP,
@@ -173,28 +173,55 @@ export async function POST(request: Request) {
     );
   }
 
-  const payload = (await response.json().catch(() => ({}))) as {
-    message?: { content?: string };
-    error?: string;
-    done_reason?: string;
-    prompt_eval_count?: number;
-    eval_count?: number;
-    total_duration?: number;
-  };
-
-  if (!response.ok || !payload.message?.content) {
+  if (!response.ok || !response.body) {
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
     return NextResponse.json(
       { error: payload.error || "Ollama 요청 실패" },
       { status: response.ok ? 502 : response.status }
     );
   }
 
-  return NextResponse.json({
-    content: payload.message.content,
-    usedNumCtx: numCtx,
-    doneReason: payload.done_reason ?? null,
-    promptEvalCount: payload.prompt_eval_count ?? null,
-    evalCount: payload.eval_count ?? null,
-    totalDuration: payload.total_duration ?? null,
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  const reader = response.body.getReader();
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          try {
+            const chunk = JSON.parse(trimmed) as { message?: { content?: string }; done?: boolean };
+            const piece = chunk.message?.content ?? "";
+            if (piece) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}\n\n`));
+            }
+            if (chunk.done) {
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+      controller.close();
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+    },
   });
 }
