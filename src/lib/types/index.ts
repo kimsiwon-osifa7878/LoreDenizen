@@ -63,7 +63,7 @@ export interface HfRepoFile {
 
 export type ModelCompatibility = "supported" | "unsupported" | "unknown";
 export type AppLanguage = "en" | "ko";
-export type ModelProvider = "local" | "openrouter" | "ollama";
+export type ModelProvider = "local" | "openrouter" | "ollama" | "nvidia";
 export type OpenRouterSort =
   | "created_desc"
   | "context_desc"
@@ -87,6 +87,7 @@ export interface AppSettings {
   openRouterModel: string | null;
   ollamaUrl: string;
   ollamaModel: string | null;
+  nvidiaModel: string | null;
   defaultCharacterId: string | null;
   theme: "light" | "dark" | "system";
   language: AppLanguage;

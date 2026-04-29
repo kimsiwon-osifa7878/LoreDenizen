@@ -1,14 +1,16 @@
 import { db } from "./database";
 import type { AppSettings } from "../types";
 import { DEFAULT_INFERENCE_PARAMS } from "../types";
+import { DEFAULT_OLLAMA_URL } from "../ollama/url";
 
 const DEFAULT_SETTINGS: AppSettings = {
   id: "global",
   activeModelId: null,
   activeProvider: null,
   openRouterModel: null,
-  ollamaUrl: "http://localhost:11434",
+  ollamaUrl: DEFAULT_OLLAMA_URL,
   ollamaModel: null,
+  nvidiaModel: null,
   defaultCharacterId: null,
   theme: "system",
   language: "en",

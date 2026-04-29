@@ -47,17 +47,6 @@ Browser-first character AI chat app with local GGUF, OpenRouter, Ollama, editabl
 
 `local-llm`, `gguf`, `wllama`, `character-ai`, `ai-chat`, `browser-ai`, `ollama`, `openrouter`, `indexeddb`, `nextjs`, `typescript`, `ai-character`, `client-side-ai`
 
-## Screenshots
-
-### Character picker
-![Character picker dialog](docs/screenshots/character-picker-dialog.png)
-
-### First Message appears immediately after character selection
-![First message seeded](docs/screenshots/first-message-seeded.png)
-
-### OpenRouter invalid API key handling
-![OpenRouter invalid key state](docs/screenshots/openrouter-invalid-key.png)
-
 ## Getting started
 
 ### 1) Install dependencies
@@ -100,6 +89,32 @@ Open `http://localhost:3000`.
    - OpenRouter: select a model and provide a valid API key if needed.
    - Ollama: connect URL and choose a discovered model.
 4. Start chatting; app state and history persist in browser storage.
+
+## Screenshots
+
+### 1) Main app layout
+
+Shows the default start state with sidebar, character list, and chat panel.
+
+![Main app layout](docs/screenshots/app-home.png)
+
+### 2) Character picker dialog
+
+Triggered by **New chat**. Conversation creation is character-first.
+
+![Character picker dialog](docs/screenshots/character-picker-dialog.png)
+
+### 3) First message seeding
+
+After selecting a character, the character's configured first message is inserted automatically.
+
+![First message seeded](docs/screenshots/first-message-seeded.png)
+
+### 4) Ollama settings tab
+
+Shows the provider connection UI for custom Ollama URL and model selection.
+
+![Ollama settings](docs/screenshots/settings-ollama.png)
 
 ## Testing
 
