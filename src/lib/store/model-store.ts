@@ -39,6 +39,9 @@ interface ModelState {
   isLoadingModel: boolean;
   openRouterHasEnvApiKey: boolean;
   nvidiaHasEnvApiKey: boolean;
+  nvidiaModels: string[];
+  nvidiaQuery: string;
+  isLoadingNvidiaModels: boolean;
   openRouterModels: OpenRouterModelItem[];
   openRouterQuery: string;
   openRouterSort: OpenRouterSort;
@@ -50,6 +53,7 @@ interface ModelState {
   loadModels: () => Promise<void>;
   loadRemoteConfigs: () => Promise<void>;
   setOpenRouterQuery: (query: string) => void;
+  setNvidiaQuery: (query: string) => void;
   setOpenRouterSort: (sort: OpenRouterSort) => Promise<void>;
   searchOpenRouterModels: (query?: string) => Promise<void>;
   loadMoreOpenRouterModels: () => Promise<void>;
@@ -61,6 +65,7 @@ interface ModelState {
   ) => Promise<void>;
   selectModel: (id: string) => Promise<void>;
   connectOpenRouter: (model: string, sessionApiKey: string | null) => Promise<void>;
+  loadNvidiaModels: (sessionApiKey: string | null, query?: string) => Promise<void>;
   connectNvidia: (model: string, sessionApiKey: string | null) => Promise<void>;
   connectOllama: (url: string) => Promise<string[]>;
   selectOllamaModel: (model: string) => Promise<void>;
@@ -102,6 +107,9 @@ export const useModelStore = create<ModelState>((set, get) => ({
   isLoadingModel: false,
   openRouterHasEnvApiKey: false,
   nvidiaHasEnvApiKey: false,
+  nvidiaModels: [],
+  nvidiaQuery: "",
+  isLoadingNvidiaModels: false,
   openRouterModels: [],
   openRouterQuery: "",
   openRouterSort: "created_desc",
@@ -182,7 +190,10 @@ export const useModelStore = create<ModelState>((set, get) => ({
       set({
         openRouterHasEnvApiKey: false,
   nvidiaHasEnvApiKey: false,
-        openRouterModels: [],
+        nvidiaModels: [],
+  nvidiaQuery: "",
+  isLoadingNvidiaModels: false,
+  openRouterModels: [],
         openRouterHasMore: false,
       });
     }
@@ -190,6 +201,10 @@ export const useModelStore = create<ModelState>((set, get) => ({
 
   setOpenRouterQuery: (query) => {
     set({ openRouterQuery: query });
+  },
+
+  setNvidiaQuery: (query) => {
+    set({ nvidiaQuery: query });
   },
 
   setOpenRouterSort: async (sort) => {
@@ -269,6 +284,25 @@ export const useModelStore = create<ModelState>((set, get) => ({
       set({ activeModelId: id, activeProvider: "local" });
     } finally {
       set({ isLoadingModel: false });
+    }
+  },
+
+
+  loadNvidiaModels: async (sessionApiKey, query) => {
+    set({ isLoadingNvidiaModels: true });
+    try {
+      const response = await fetch("/api/nvidia/models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apiKey: sessionApiKey, q: query ?? get().nvidiaQuery }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { items?: string[]; error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || "NVIDIA_MODELS_LOAD_FAILED");
+      }
+      set({ nvidiaModels: payload.items ?? [] });
+    } finally {
+      set({ isLoadingNvidiaModels: false });
     }
   },
 

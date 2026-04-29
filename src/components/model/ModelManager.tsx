@@ -358,23 +358,40 @@ function NvidiaSettings() {
   const activeModelId = useModelStore((s) => s.activeModelId);
   const connectNvidia = useModelStore((s) => s.connectNvidia);
   const nvidiaHasEnvApiKey = useModelStore((s) => s.nvidiaHasEnvApiKey);
-  const [modelInput, setModelInput] = useState("meta/llama-3.1-8b-instruct");
+  const nvidiaModels = useModelStore((s) => s.nvidiaModels);
+  const nvidiaQuery = useModelStore((s) => s.nvidiaQuery);
+  const setNvidiaQuery = useModelStore((s) => s.setNvidiaQuery);
+  const loadNvidiaModels = useModelStore((s) => s.loadNvidiaModels);
+  const isLoadingNvidiaModels = useModelStore((s) => s.isLoadingNvidiaModels);
+  const [sessionApiKey, setSessionApiKey] = useState<string | null>(null);
 
   const selectedModel = activeModelId?.startsWith("nvidia::")
     ? activeModelId.replace("nvidia::", "")
     : "";
 
-  async function handleConnect() {
-    if (!modelInput.trim()) return;
-    let sessionApiKey: string | null = null;
-    if (!nvidiaHasEnvApiKey) {
+  async function handleLoadModels() {
+    let key = sessionApiKey;
+    if (!nvidiaHasEnvApiKey && !key) {
       const input = window.prompt("NVIDIA API key를 입력하세요.");
       if (!input?.trim()) return;
-      sessionApiKey = input.trim();
+      key = input.trim();
+      setSessionApiKey(key);
     }
 
-    await connectNvidia(modelInput.trim(), sessionApiKey);
-    window.alert(`NVIDIA 연결 완료: ${modelInput.trim()}`);
+    await loadNvidiaModels(key, nvidiaQuery);
+  }
+
+  async function handleSelectModel(model: string) {
+    let key = sessionApiKey;
+    if (!nvidiaHasEnvApiKey && !key) {
+      const input = window.prompt("NVIDIA API key를 입력하세요.");
+      if (!input?.trim()) return;
+      key = input.trim();
+      setSessionApiKey(key);
+    }
+
+    await connectNvidia(model, key);
+    window.alert(`NVIDIA 연결 완료: ${model}`);
   }
 
   return (
@@ -383,17 +400,28 @@ function NvidiaSettings() {
         build.nvidia.com API를 통해 원격 모델을 사용합니다.
       </div>
       <div className="rounded-lg border border-border p-3">
-        <label className="mb-2 block text-sm font-medium">Model ID</label>
-        <input
-          value={modelInput}
-          onChange={(event) => setModelInput(event.target.value)}
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-          placeholder="meta/llama-3.1-8b-instruct"
-        />
-        <button type="button" onClick={() => { void handleConnect(); }} className="mt-3 rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover">연결</button>
+        <div className="flex gap-2">
+          <input value={nvidiaQuery} onChange={(event) => setNvidiaQuery(event.target.value)} className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Search NVIDIA models" />
+          <button type="button" onClick={() => { void handleLoadModels(); }} className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover">모델 불러오기</button>
+        </div>
       </div>
-      {selectedModel && <p className="text-xs text-green-600">선택된 모델: {selectedModel}</p>}
-      {!nvidiaHasEnvApiKey && <p className="text-xs text-amber-600">.env에 NVIDIA_API_KEY가 없어서 연결 시 입력을 요청합니다.</p>}
+
+      <div className="h-[320px] overflow-y-auto rounded-lg border border-border">
+        {isLoadingNvidiaModels && <p className="p-3 text-sm text-muted">불러오는 중...</p>}
+        {!isLoadingNvidiaModels && nvidiaModels.length === 0 && <p className="p-3 text-sm text-muted">모델 목록이 없습니다. 먼저 불러오기를 실행하세요.</p>}
+        <div className="divide-y divide-border">
+          {nvidiaModels.map((model) => {
+            const isSelected = selectedModel === model;
+            return (
+              <div key={model} className={`flex items-center justify-between p-3 ${isSelected ? "bg-accent/10" : ""}`}>
+                <p className="truncate pr-3 text-sm">{model}</p>
+                <button type="button" onClick={() => { void handleSelectModel(model); }} className="rounded-md border border-accent px-2 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent/10">{isSelected ? "Selected" : "선택"}</button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {!nvidiaHasEnvApiKey && <p className="text-xs text-amber-600">.env에 NVIDIA_API_KEY가 없어서 세션 키 입력이 필요합니다.</p>}
     </div>
   );
 }
