@@ -12,7 +12,7 @@ export function ModelManager() {
   const open = useUIStore((s) => s.modelDialogOpen);
   const setOpen = useUIStore((s) => s.setModelDialogOpen);
   const language = useSettingsStore((s) => s.language);
-  const [tab, setTab] = useState<"models" | "download" | "openrouter" | "ollama" | "language">("models");
+  const [tab, setTab] = useState<"models" | "download" | "openrouter" | "nvidia" | "ollama" | "language">("models");
 
   if (!open) return null;
 
@@ -30,10 +30,11 @@ export function ModelManager() {
           </button>
         </div>
 
-        <div className="grid grid-cols-5 border-b border-border">
+        <div className="grid grid-cols-6 border-b border-border">
           <TabButton active={tab === "models"} onClick={() => setTab("models")} label={t(language, "myModels")} />
           <TabButton active={tab === "download"} onClick={() => setTab("download")} label={t(language, "modelDownload")} />
           <TabButton active={tab === "openrouter"} onClick={() => setTab("openrouter")} label="OpenRouter" />
+          <TabButton active={tab === "nvidia"} onClick={() => setTab("nvidia")} label="NVIDIA" />
           <TabButton active={tab === "ollama"} onClick={() => setTab("ollama")} label="Ollama" />
           <TabButton active={tab === "language"} onClick={() => setTab("language")} label={t(language, "language")} />
         </div>
@@ -42,6 +43,7 @@ export function ModelManager() {
           {tab === "models" && <MyModels />}
           {tab === "download" && <ModelDownloader />}
           {tab === "openrouter" && <OpenRouterSettings />}
+          {tab === "nvidia" && <NvidiaSettings />}
           {tab === "ollama" && <OllamaSettings />}
           {tab === "language" && <LanguageSettings />}
         </div>
@@ -349,6 +351,79 @@ function formatDate(value: number | null): string {
   }
 
   return new Date(value * 1000).toISOString().slice(0, 10);
+}
+
+
+function NvidiaSettings() {
+  const activeModelId = useModelStore((s) => s.activeModelId);
+  const connectNvidia = useModelStore((s) => s.connectNvidia);
+  const nvidiaHasEnvApiKey = useModelStore((s) => s.nvidiaHasEnvApiKey);
+  const nvidiaModels = useModelStore((s) => s.nvidiaModels);
+  const nvidiaQuery = useModelStore((s) => s.nvidiaQuery);
+  const setNvidiaQuery = useModelStore((s) => s.setNvidiaQuery);
+  const loadNvidiaModels = useModelStore((s) => s.loadNvidiaModels);
+  const isLoadingNvidiaModels = useModelStore((s) => s.isLoadingNvidiaModels);
+  const [sessionApiKey, setSessionApiKey] = useState<string | null>(null);
+
+  const selectedModel = activeModelId?.startsWith("nvidia::")
+    ? activeModelId.replace("nvidia::", "")
+    : "";
+
+  async function handleLoadModels() {
+    let key = sessionApiKey;
+    if (!nvidiaHasEnvApiKey && !key) {
+      const input = window.prompt("NVIDIA API key를 입력하세요.");
+      if (!input?.trim()) return;
+      key = input.trim();
+      setSessionApiKey(key);
+    }
+
+    await loadNvidiaModels(key, nvidiaQuery);
+  }
+
+  async function handleSelectModel(model: string) {
+    let key = sessionApiKey;
+    if (!nvidiaHasEnvApiKey && !key) {
+      const input = window.prompt("NVIDIA API key를 입력하세요.");
+      if (!input?.trim()) return;
+      key = input.trim();
+      setSessionApiKey(key);
+    }
+
+    await connectNvidia(model, key);
+    window.alert(`NVIDIA 연결 완료: ${model}`);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-border bg-bubble-assistant/40 p-3 text-sm text-muted">
+        build.nvidia.com API를 통해 원격 모델을 사용합니다.
+      </div>
+      <div className="rounded-lg border border-border p-3">
+        <div className="flex gap-2">
+          <input value={nvidiaQuery} onChange={(event) => setNvidiaQuery(event.target.value)} className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" placeholder="Search NVIDIA models" />
+          <button type="button" onClick={() => { void handleLoadModels(); }} className="rounded-lg bg-accent px-3 py-2 text-sm text-white transition-colors hover:bg-accent-hover">모델 불러오기</button>
+        </div>
+      </div>
+
+      <div className="h-[320px] overflow-y-auto rounded-lg border border-border">
+        {isLoadingNvidiaModels && <p className="p-3 text-sm text-muted">불러오는 중...</p>}
+        {!isLoadingNvidiaModels && nvidiaModels.length === 0 && <p className="p-3 text-sm text-muted">모델 목록이 없습니다. 먼저 불러오기를 실행하세요.</p>}
+        <div className="divide-y divide-border">
+          {nvidiaModels.map((model) => {
+            const isSelected = selectedModel === model;
+            return (
+              <div key={model} className={`flex items-center justify-between p-3 ${isSelected ? "bg-accent/10" : ""}`}>
+                <p className="truncate pr-3 text-sm">{model}</p>
+                <button type="button" onClick={() => { void handleSelectModel(model); }} className="rounded-md border border-accent px-2 py-1 text-xs font-medium text-accent transition-colors hover:bg-accent/10">{isSelected ? "Selected" : "선택"}</button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      {!nvidiaHasEnvApiKey && <p className="text-xs text-amber-600">.env에 NVIDIA_API_KEY가 없어서 세션 키 입력이 필요합니다.</p>}
+    </div>
+  );
 }
 
 function OllamaSettings() {
