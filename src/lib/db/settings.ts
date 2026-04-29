@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   openRouterModel: null,
   ollamaUrl: DEFAULT_OLLAMA_URL,
   ollamaModel: null,
+  nvidiaModel: null,
   defaultCharacterId: null,
   theme: "system",
   language: "en",

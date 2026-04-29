@@ -24,6 +24,7 @@ class LLMEngine {
   private currentModelId: string | null = null;
   private currentProvider: ModelProvider | null = null;
   private openRouterApiKey: string | null = null;
+  private nvidiaApiKey: string | null = null;
   private ollamaUrl = DEFAULT_OLLAMA_URL;
   private isLoading = false;
   private abortController: AbortController | null = null;
@@ -39,6 +40,14 @@ class LLMEngine {
 
   hasOpenRouterSessionApiKey(): boolean {
     return Boolean(this.openRouterApiKey);
+  }
+
+  setNvidiaSessionApiKey(apiKey: string | null): void {
+    this.nvidiaApiKey = apiKey?.trim() || null;
+  }
+
+  hasNvidiaSessionApiKey(): boolean {
+    return Boolean(this.nvidiaApiKey);
   }
 
   setOllamaUrl(url: string): void {
@@ -81,6 +90,11 @@ class LLMEngine {
     this.currentModelId = `openrouter::${model}`;
   }
 
+  configureNvidia(model: string): void {
+    this.currentProvider = "nvidia";
+    this.currentModelId = `nvidia::${model}`;
+  }
+
   configureOllama(model: string, url: string): void {
     this.currentProvider = "ollama";
     this.ollamaUrl = normalizeOllamaUrl(url);
@@ -104,6 +118,10 @@ class LLMEngine {
 
     if (this.currentProvider === "ollama") {
       return this.generateWithOllama(messages, params, onToken);
+    }
+
+    if (this.currentProvider === "nvidia") {
+      return this.generateWithNvidia(messages, params, onToken);
     }
 
     if (!this.wllama) throw new Error("모델이 로드되지 않음");
@@ -154,14 +172,12 @@ class LLMEngine {
       }),
     });
 
-    const payload = (await response.json()) as { content?: string; error?: string };
-    if (!response.ok || !payload.content) {
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
       throw new Error(payload.error || "OpenRouter 요청 실패");
     }
 
-    const visibleText = stripThinkBlocks(payload.content);
-    onToken(visibleText, visibleText);
-    return visibleText;
+    return this.streamSseResponse(response, onToken);
   }
 
   private async generateWithOllama(
@@ -197,15 +213,82 @@ class LLMEngine {
       }),
     });
 
-    const payload = (await response.json()) as { content?: string; error?: string };
-
-    if (!response.ok || !payload.content) {
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
       throw new Error(payload.error || "Ollama 요청 실패");
     }
 
-    const visibleText = stripThinkBlocks(payload.content);
-    onToken(visibleText, visibleText);
-    return visibleText;
+    return this.streamSseResponse(response, onToken);
+  }
+
+
+  private async generateWithNvidia(
+    messages: Array<{ role: string; content: string }>,
+    params: { temperature: number; topP: number; maxTokens: number },
+    onToken: (token: string, currentText: string) => void
+  ): Promise<string> {
+    if (!this.currentModelId) {
+      throw new Error("NVIDIA 모델이 선택되지 않음");
+    }
+
+    const model = this.currentModelId.replace("nvidia::", "");
+    const response = await fetch("/api/nvidia/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        apiKey: this.nvidiaApiKey,
+        messages: this.withNoThinkInstruction(messages),
+        params,
+      }),
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(payload.error || "NVIDIA 요청 실패");
+    }
+
+    return this.streamSseResponse(response, onToken);
+  }
+
+  private async streamSseResponse(response: Response, onToken: (token: string, currentText: string) => void): Promise<string> {
+    if (!response.body) {
+      throw new Error("Streaming body missing");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let current = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split("\n\n");
+      buffer = events.pop() ?? "";
+
+      for (const event of events) {
+        const dataLines = event.split("\n").filter((line) => line.startsWith("data:"));
+        for (const line of dataLines) {
+          const payload = line.slice(5).trim();
+          if (!payload || payload === "[DONE]") continue;
+          try {
+            const json = JSON.parse(payload) as { choices?: Array<{ delta?: { content?: string } }> };
+            const piece = json.choices?.[0]?.delta?.content ?? "";
+            if (piece) {
+              current += piece;
+              const visibleText = stripThinkBlocks(current);
+              onToken(piece, visibleText);
+            }
+          } catch {
+            continue;
+          }
+        }
+      }
+    }
+
+    return stripThinkBlocks(current);
   }
 
   stopGeneration(): void {

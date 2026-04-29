@@ -25,6 +25,11 @@ interface OpenRouterValidateResponse {
   error?: string;
 }
 
+interface NvidiaValidateResponse {
+  valid?: boolean;
+  error?: string;
+}
+
 interface ModelState {
   models: DownloadedModel[];
   activeModelId: string | null;
@@ -33,6 +38,7 @@ interface ModelState {
   downloadProgress: { loaded: number; total: number } | null;
   isLoadingModel: boolean;
   openRouterHasEnvApiKey: boolean;
+  nvidiaHasEnvApiKey: boolean;
   openRouterModels: OpenRouterModelItem[];
   openRouterQuery: string;
   openRouterSort: OpenRouterSort;
@@ -55,6 +61,7 @@ interface ModelState {
   ) => Promise<void>;
   selectModel: (id: string) => Promise<void>;
   connectOpenRouter: (model: string, sessionApiKey: string | null) => Promise<void>;
+  connectNvidia: (model: string, sessionApiKey: string | null) => Promise<void>;
   connectOllama: (url: string) => Promise<string[]>;
   selectOllamaModel: (model: string) => Promise<void>;
   removeModel: (id: string) => Promise<void>;
@@ -94,6 +101,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
   downloadProgress: null,
   isLoadingModel: false,
   openRouterHasEnvApiKey: false,
+  nvidiaHasEnvApiKey: false,
   openRouterModels: [],
   openRouterQuery: "",
   openRouterSort: "created_desc",
@@ -129,6 +137,12 @@ export const useModelStore = create<ModelState>((set, get) => ({
     ) {
       llmEngine.configureOllama(settings.ollamaModel, settings.ollamaUrl);
     }
+
+    if (settings.activeProvider === "nvidia" && settings.nvidiaModel) {
+      if (llmEngine.hasNvidiaSessionApiKey()) {
+        llmEngine.configureNvidia(settings.nvidiaModel);
+      }
+    }
   },
 
   loadRemoteConfigs: async () => {
@@ -138,8 +152,12 @@ export const useModelStore = create<ModelState>((set, get) => ({
         hasApiKey?: boolean;
       };
 
+      const nvidiaConfigResponse = await fetch("/api/nvidia/config", { cache: "no-store" });
+      const nvidiaConfigData = (await nvidiaConfigResponse.json()) as { hasApiKey?: boolean };
+
       set({
         openRouterHasEnvApiKey: Boolean(data.hasApiKey),
+        nvidiaHasEnvApiKey: Boolean(nvidiaConfigData.hasApiKey),
       });
 
       const settings = await getSettings();
@@ -163,6 +181,7 @@ export const useModelStore = create<ModelState>((set, get) => ({
     } catch {
       set({
         openRouterHasEnvApiKey: false,
+  nvidiaHasEnvApiKey: false,
         openRouterModels: [],
         openRouterHasMore: false,
       });
@@ -277,6 +296,32 @@ export const useModelStore = create<ModelState>((set, get) => ({
       openRouterModel: model,
     });
     set({ activeProvider: "openrouter", activeModelId: modelId });
+  },
+
+
+  connectNvidia: async (model, sessionApiKey) => {
+    const validationResponse = await fetch("/api/nvidia/validate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        apiKey: sessionApiKey,
+      }),
+    });
+    const validationPayload = (await validationResponse.json()) as NvidiaValidateResponse;
+    if (!validationResponse.ok || !validationPayload.valid) {
+      throw new Error(validationPayload.error || "NVIDIA_API_KEY_INVALID");
+    }
+
+    llmEngine.setNvidiaSessionApiKey(sessionApiKey);
+    llmEngine.configureNvidia(model);
+    const modelId = `nvidia::${model}`;
+    await updateSettings({
+      activeProvider: "nvidia",
+      activeModelId: modelId,
+      nvidiaModel: model,
+    });
+    set({ activeProvider: "nvidia", activeModelId: modelId });
   },
 
   connectOllama: async (url) => {
